@@ -1,7 +1,7 @@
 data_explorer:
   console_output: True
   input:
-    file: {"path": "/home/david/Work/introduction-data-science/data/BikeRentalDaily_train.csv", "type": "csv", "sep": ";"}
+    file: {"path": "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv", "type": "csv", "sep": ";"}
   split_data: False
   discriptiv_analysis: True
 
