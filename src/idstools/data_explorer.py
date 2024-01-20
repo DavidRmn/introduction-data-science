@@ -12,7 +12,7 @@ class data_explorer():
 
     def console_output(self):
         logger.info(f"Start data_explorer with config:\n{yaml.dump(self.config, default_flow_style=False)}")
-        logger.info(self.description.to_string())
+        logger.info(f"Descriptive Analysis of {self.config['input']['file']['path']}\n{self.description.to_string()}")
 
     def discriptive_analysis(self):
         if self.config["input"]["file"]:
