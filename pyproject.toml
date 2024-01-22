@@ -37,7 +37,8 @@ dependencies = [
   "pyyaml",
   "missingno",
   "altair",
-  "seaborn"
+  "seaborn",
+  "scikit-learn"
 ]
 
 [project.urls]
