@@ -22,5 +22,5 @@ loggers:
     handlers: [console_handler, file_handler]
     propagate: False
 root:
-  level: DEBUG
+  level: INFO
   handlers: [console_handler, file_handler]

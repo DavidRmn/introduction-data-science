@@ -34,7 +34,10 @@ classifiers = [
 
 dependencies = [
   "pandas",
-  "pyyaml"
+  "pyyaml",
+  "missingno",
+  "altair",
+  "seaborn"
 ]
 
 [project.urls]
