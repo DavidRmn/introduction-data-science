@@ -4,8 +4,8 @@ from pathlib import Path
 import idstools.data_explorer as idsde
 
 def read_yaml(file: Path):
-    with open(file, 'r') as file:
-        content = yaml.load(file, Loader=yaml.SafeLoader)
+    with open(file, 'r') as f:
+        content = yaml.load(f, Loader=yaml.SafeLoader)
     return content
 
 class wrapper():

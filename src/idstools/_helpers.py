@@ -15,6 +15,7 @@ def setup_logging(module_name):
         config = yaml.safe_load(config_file)
 
     # Configure logging for the specific module
+    logger = None
     if module_name in config['loggers']:
         logging.config.dictConfig(config)
         logger = logging.getLogger(module_name)
