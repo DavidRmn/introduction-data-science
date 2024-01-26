@@ -14,8 +14,8 @@ def setup_logging(module_name):
     with open(logging_config_path, 'r') as config_file:
         config = yaml.safe_load(config_file)
 
+    logger = logging.getLogger('default')
     # Configure logging for the specific module
-    logger = None
     if module_name in config['loggers']:
         logging.config.dictConfig(config)
         logger = logging.getLogger(module_name)
