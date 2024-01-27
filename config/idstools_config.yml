@@ -4,7 +4,6 @@ data_explorer:
       path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
       type: "csv"
       sep: ";"
-  split_data: False
   discriptiv_analysis: True
 
 data_preparation:
@@ -13,18 +12,33 @@ data_preparation:
       path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
       type: "csv"
       sep: ";"
-  one_hot_encode: [
-    {
-      target: "weekday",
-      prefix: "weekday",
-      dtype: "int"
-    },
-    {
-      target: "season",
-      prefix: "season",
-      dtype: "int"
-    }
-  ]
+  pipeline:
+    imputer: [
+      {
+      "variable": "hum",
+      "strategy": "mean"
+      }
+      ]
+    one_hot_encoder: [
+      {
+      "variable": "season",
+      "prefix": "season",
+      "dtype": "int"
+      },
+      {
+      "variable": "mnth",
+      "prefix": "month",
+      "dtype": "int"
+      }
+      ]
+    feature_dropper: [
+      {
+      "variable": "instant"
+      }
+      ]
+    data_splitter:
+      test_size: 0.2
+      random_state: 42
 
 model_optimization:
   evaluation:
