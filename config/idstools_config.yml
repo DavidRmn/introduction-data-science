@@ -1,7 +1,6 @@
 data_explorer:
   console_output: True
-  input:
-    file: 
+  input_file: 
       path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
       type: "csv"
       sep: ";"
@@ -9,5 +8,25 @@ data_explorer:
   discriptiv_analysis: True
 
 data_preparation:
+  console_output: True
+  input_file: 
+      path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+      type: "csv"
+      sep: ";"
+  one_hot_encode: [
+    {
+      target: "weekday",
+      prefix: "weekday",
+      dtype: "int"
+    },
+    {
+      target: "season",
+      prefix: "season",
+      dtype: "int"
+    }
+  ]
 
 model_optimization:
+  evaluation:
+    metric: "rmse"
+    cv: 5

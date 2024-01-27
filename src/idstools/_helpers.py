@@ -1,6 +1,8 @@
+from altair import Union
 import yaml
 import logging
 import logging.config
+import pandas as pd
 
 
 from pathlib import Path
@@ -23,3 +25,15 @@ def setup_logging(module_name):
         logging.basicConfig(level=logging.WARNING)  # Fallback if module not found in config
 
     return logger
+
+logger = setup_logging(__name__)
+
+def read_data(file_config: dict) -> pd.DataFrame:
+    data = pd.DataFrame()
+    try:
+        if file_config["type"] == "csv":
+            data = pd.read_csv(file_config["path"], sep=file_config["sep"])
+    except Exception as e:
+        logger.error(f"Error in read_data: {e}")
+
+    return data

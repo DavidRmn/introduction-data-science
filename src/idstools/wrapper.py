@@ -2,6 +2,7 @@ import yaml
 from pathlib import Path
 
 import idstools.data_explorer as idsde
+import idstools.data_preparation as idsdp
 
 def read_yaml(file: Path):
     with open(file, 'r') as f:
@@ -14,7 +15,9 @@ class wrapper():
 
     def __instantiate_modules(self):
         self.data_explorer = idsde.data_explorer(self.config["data_explorer"])
+        self.data_preparation = idsdp.data_preparation(self.config["data_preparation"])
 
     def run(self):
         self.__instantiate_modules()
         self.data_explorer.run()
+        self.data_preparation.run()

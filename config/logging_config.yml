@@ -13,6 +13,10 @@ handlers:
     level: DEBUG
     formatter: simple
 loggers:
+  _helpers:
+    level: DEBUG
+    handlers: [console_handler, file_handler]
+    propagate: False
   data_explorer:
     level: DEBUG
     handlers: [console_handler, file_handler]
