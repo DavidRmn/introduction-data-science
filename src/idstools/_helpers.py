@@ -44,3 +44,10 @@ def read_data(file_config: dict) -> pd.DataFrame:
         logger.error(f"Error in read_data: {e}")
 
     return data
+
+def write_data(data: pd.DataFrame, output_path: Path, filename: str):
+    try:
+        data.to_csv(output_path / filename, index=False)
+        logger.info(f"Data written to: {output_path / filename}")
+    except Exception as e:
+        logger.error(f"Error in write_data: {e}")

@@ -94,20 +94,10 @@ class data_preparation():
 
     def build_pipeline(self, config: dict):
         try:
-            self.pipeline = Pipeline(steps=[('Imputer', None),
-                                            ('OneHotEncoder', None),
-                                            ('FeatureDropper', None),
-                                            ('GenericDataFrameTransformer', None)])
-
-            if 'Imputer' in config:
-                self.pipeline.set_params(Imputer=Imputer(config['Imputer']))
-            if 'OneHotEncoder' in config:
-                self.pipeline.set_params(OneHotEncoder=OneHotEncoder(config['OneHotEncoder']))
-            if 'FeatureDropper' in config:
-                self.pipeline.set_params(FeatureDropper=FeatureDropper(config['FeatureDropper']))
-            if 'GenericDataFrameTransformer' in config:
-                self.pipeline.set_params(GenericDataFrameTransformer=GenericDataFrameTransformer(config['GenericDataFrameTransformer']))
-            
+            self.pipeline = Pipeline(steps=[(transformer, None) for transformer in config])
+            print(self.pipeline)
+            for transformer in config:
+                self.pipeline.set_params(**{transformer: eval(transformer)(config=config[transformer])})
             logger.info(f"Pipeline created:\n{str(self.pipeline)}")
             return self.pipeline
         except Exception as e:
@@ -115,26 +105,25 @@ class data_preparation():
 
     def run_pipeline(self, config: dict):
         try:
-            self.processed_data = self.data.copy()
-
-            if 'Imputer' in config:
-                self.processed_data = self.pipeline.named_steps['Imputer'].transform(self.processed_data)
-            if 'OneHotEncoder' in config:    
-                self.processed_data = self.pipeline.named_steps['OneHotEncoder'].transform(self.processed_data)
-            if 'FeatureDropper' in config:
-                self.processed_data = self.pipeline.named_steps['FeatureDropper'].transform(self.processed_data)
-            if 'GenericDataFrameTransformer' in config:
-                self.processed_data = self.pipeline.named_steps['GenericDataFrameTransformer'].transform(self.processed_data)
-
-            logger.info(f"{self.filename} has been processed by the pipeline.")
+            self.processed_data = self.data.copy()        
+            for transformer in config:
+                self.processed_data = self.pipeline.named_steps[transformer].transform(self.processed_data)
+                logger.info(f"Pipeline step {transformer} has been processed.")
             return self.processed_data
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 
+    def write_data(self):
+        try:
+            helpers.write_data(data=self.processed_data, output_path=self.output_path, filename=f"{self.filename}_processed.csv")
+        except Exception as e:
+            logger.error(f"Error in write_data: {e}")
+
     def run(self):
         try:
-            self.build_pipeline(config=self.config["pipeline"])
-            self.run_pipeline(config=self.config["pipeline"])
+            _ = self.build_pipeline(config=self.config["pipeline"])
+            _ = self.run_pipeline(config=self.config["pipeline"])
+            self.write_data()
         except Exception as e:
             logger.error(f"Error in run: {e}")
             self.cancel()
