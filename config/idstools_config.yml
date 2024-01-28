@@ -1,24 +1,50 @@
+#This file contains the configuration of the idstools package.
+version: 1
+#The data_explorer section contains the configuration of the data_explorer module.
 data_explorer:
-  console_output: True
-  input_file: 
+  # The output_path parameter specifies the path where the results of the data exploration will be saved.
+  output_path: "/home/davidrmn/Studies/introduction-data-science/results"
+  # The input_file parameter specifies the path of the input file.
+  input_file:
+      # The path parameter specifies the path of the input file.
       path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+      # The type parameter specifies the type of the input file. Currently, only csv files are supported.
       type: "csv"
+      # The sep parameter specifies the separator of the input file.
       sep: ";"
+  # The discriptiv_analysis parameter specifies if the descriptive analysis will be performed.    
   discriptiv_analysis: True
+  # The missing_values parameter specifies if the missing values analysis will be performed.
+  missing_values: True
+  # The correlation_analysis parameter specifies if the correlation analysis will be performed.
+  correlation_analysis: True
+  # The outliers_analysis parameter specifies if the outliers analysis will be performed.
+  outliers_analysis: True
 
+#The data_preparation section contains the configuration of the data_preparation module.
 data_preparation:
-  console_output: True
+  # The output_path parameter specifies the path where the results of the data preparation will be saved.
+  output_path: "/home/davidrmn/Studies/introduction-data-science/results"
+  # The input_file parameter specifies the path of the input file.
   input_file: 
+      # The path parameter specifies the path of the input file.
       path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+      # The type parameter specifies the type of the input file. Currently, only csv files are supported.  
       type: "csv"
+      # The sep parameter specifies the separator of the input file.  
       sep: ";"
+  # The pipeline parameter specifies the pipeline of the data preparation.    
   pipeline:
+    # The run parameter specifies if the data preparation will be performed.  
+    run: True
+    # To add an imputer to the pipeline, add a new element to the imputer list.
     imputer: [
       {
       "variable": "hum",
       "strategy": "mean"
       }
       ]
+    # To add a one hot encoder to the pipeline, add a new element to the one_hot_encoder list.
     one_hot_encoder: [
       {
       "variable": "season",
@@ -31,16 +57,22 @@ data_preparation:
       "dtype": "int"
       }
       ]
+    # To add a feature_dropper to the pipeline, add a new element to the feature_dropper list.  
     feature_dropper: [
       {
       "variable": "instant"
       }
       ]
+    # To add a data_splitter to the pipeline, specify the parameters of the data_splitter.
     data_splitter:
       test_size: 0.2
       random_state: 42
 
+#The model_optimization section contains the configuration of the model_optimization module.
 model_optimization:
+  # The output_path parameter specifies the path where the results of the model optimization will be saved.
+  output_path: "/home/davidrmn/Studies/introduction-data-science/results"
+  # The evaluation parameter specifies the evaluation of the model optimization.
   evaluation:
     metric: "rmse"
     cv: 5

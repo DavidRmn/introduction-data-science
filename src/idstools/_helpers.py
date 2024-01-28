@@ -10,11 +10,18 @@ from pathlib import Path
 
 logging_config_path=Path(__file__).parent.parent.parent / 'config' / 'logging_config.yml'
 
-
 def setup_logging(module_name):
+    package_root = Path(__file__).resolve().parent.parent.parent
+    log_file_path = package_root / 'results' / 'idstools.log'
+    # Ensure the /results directory exists
+    log_file_path.parent.mkdir(parents=True, exist_ok=True)
     # Load the logging configuration from the YAML file
     with open(logging_config_path, 'r') as config_file:
         config = yaml.safe_load(config_file)
+
+    # Update the filename in the file_handler
+    if 'handlers' in config and 'file_handler' in config['handlers']:
+        config['handlers']['file_handler']['filename'] = str(log_file_path)
 
     logger = logging.getLogger('default')
     # Configure logging for the specific module
