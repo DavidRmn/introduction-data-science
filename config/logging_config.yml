@@ -15,15 +15,23 @@ handlers:
 loggers:
   _helpers:
     level: DEBUG
-    handlers: [console_handler, file_handler]
+    handlers: [file_handler]
     propagate: False
   data_explorer:
     level: DEBUG
-    handlers: [console_handler, file_handler]
+    handlers: [file_handler]
     propagate: False
   data_preparation:
     level: DEBUG
-    handlers: [console_handler, file_handler]
+    handlers: [file_handler]
+    propagate: False
+  tqdm:
+    level: INFO
+    handlers: [file_handler]
+    propagate: False
+  lightgbm:
+    level: INFO
+    handlers: [file_handler]
     propagate: False
 root:
   level: INFO

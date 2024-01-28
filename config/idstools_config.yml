@@ -15,7 +15,7 @@ data_explorer:
   # The discriptiv_analysis parameter specifies if the descriptive analysis will be performed.    
   discriptiv_analysis: True
   # The missing_values parameter specifies if the missing values analysis will be performed.
-  missing_values: True
+  missing_value_analysis: True
   # The correlation_analysis parameter specifies if the correlation analysis will be performed.
   correlation_analysis: True
   # The outliers_analysis parameter specifies if the outliers analysis will be performed.
@@ -35,32 +35,40 @@ data_preparation:
       sep: ";"
   # The pipeline parameter specifies the pipeline of the data preparation.    
   pipeline:
-    # The run parameter specifies if the data preparation will be performed.  
-    run: True
     # To add an imputer to the pipeline, add a new element to the imputer list.
     imputer: [
       {
-      "variable": "hum",
-      "strategy": "mean"
+      "target": "hum",
+      "config": {
+        "strategy": "mean"
+        }
       }
       ]
     # To add a one hot encoder to the pipeline, add a new element to the one_hot_encoder list.
     one_hot_encoder: [
       {
-      "variable": "season",
-      "prefix": "season",
-      "dtype": "int"
+      "target": "season",
+      "config": {
+        "prefix": "season",
+        "dtype": "int"
+        }
       },
       {
-      "variable": "mnth",
-      "prefix": "month",
-      "dtype": "int"
+      "target": "mnth",
+      "config": {
+        "prefix": "month",
+        "dtype": "int"
+        }
       }
       ]
     # To add a feature_dropper to the pipeline, add a new element to the feature_dropper list.  
     feature_dropper: [
       {
-      "variable": "instant"
+      "target": "instant",
+      "config": {
+        "axis": 1,
+        "errors": "ignore"
+        }
       }
       ]
     # To add a data_splitter to the pipeline, specify the parameters of the data_splitter.

@@ -1,87 +1,143 @@
 import yaml
+import importlib
 import pandas as pd
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.impute import SimpleImputer
+from pathlib import Path
 from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.base import BaseEstimator, TransformerMixin
+
 import idstools._helpers as helpers
 
 logger = helpers.setup_logging('data_preparation')
 
-class imputer(BaseEstimator, TransformerMixin):
-    def fit(self, X, config: dict, y=None):
+class Imputer(BaseEstimator, TransformerMixin):
+    def __init__(self, config: list):
+        self.config = config
+
+    def fit(self, X, y=None):
         return self
     
-    def transform(self, X, config: dict):
-        for element in config["imputer"]:
-            imputer = SimpleImputer(strategy=element["strategy"])
-            X[element["variable"]] = imputer.fit_transform(X[[element["variable"]]])
+    def transform(self, X):
+        for element in self.config:
+            imputer = SimpleImputer(**element["config"])
+            X[element["target"]] = imputer.fit_transform(X[[element["target"]]])
         return X
     
-class one_hot_encoder(BaseEstimator, TransformerMixin):
-    def fit(self, X, config: dict, y=None):
+class OneHotEncoder(BaseEstimator, TransformerMixin):
+    def __init__(self, config: list):
+        self.config = config
+
+    def fit(self, X, y=None):
         return self
     
-    def transform(self, X, config: dict):
-        for element in config["one_hot_encoder"]:
-            ohe_data = pd.get_dummies(X[element["variable"]], prefix=element["prefix"], dtype=element["dtype"])
+    def transform(self, X):
+        for element in self.config:
+            ohe_data = pd.get_dummies(X[element["target"]], **element["config"])
             X = pd.concat([X, ohe_data], axis=1)
-            X = X.drop([element["variable"]], axis=1)
+            X = X.drop([element["target"]], axis=1)
         return X
     
-class feature_dropper(BaseEstimator, TransformerMixin):
-    def fit(self, X, config: dict, y=None):
+class FeatureDropper(BaseEstimator, TransformerMixin):
+    def __init__(self, config: list):
+        self.config = config
+
+    def fit(self, X, y=None):
         return self
     
-    def transform(self, X, config: dict):
-        for element in config["feature_dropper"]:
-            X = X.drop([element["variable"]], axis=1, errors='ignore')
+    def transform(self, X):
+        for element in self.config:
+            X = X.drop([element["target"]], **element["config"])
+        return X
+
+class GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
+    def __init__(self, config: list):
+        self.config = config
+
+    def fit(self, X, y=None):
+        return self
+
+    def _retrieve_function(self, func_name, module=None):
+        if callable(func_name):
+            return func_name
+        try:
+            if module:
+                module = importlib.import_module(module)
+                return getattr(module, func_name)
+            else:
+                return globals()[func_name]
+        except Exception as e:
+            raise ImportError(f"Could not import function: {func_name} from module: {module}. Error: {e}")
+
+    def transform(self, X):
+        for element in self.config:
+            func = self._retrieve_function(element["transform_func"], element.get("module"))
+            X = func(X, **element.get("config", {}))
         return X
 
 class data_preparation():
     """This class is used to prepare the data for the training of the model."""
     def __init__(self, config: dict):
+        logger.info(f"Start data_preparation with config: \
+                    \n{yaml.dump(config, default_flow_style=False)}")
         self.config = config
-        self.data = pd.DataFrame() 
 
-    def build_pipeline(self):
+        if not self.config["input_file"]:
+            logger.error(f"Error in run: No input file specified.")
+            self.cancel()
+        self.data = helpers.read_data(file_config=self.config["input_file"])
+
+        if not self.config["output_path"]:
+            logger.info(f"No output path specified. Using default path: {Path(__file__).parent.parent.parent}/results")
+            self.output_path = Path(__file__).parent.parent.parent / "results"
+        
+        self.filename = Path(self.config["input_file"]["path"]).stem
+
+    def build_pipeline(self, config: dict):
         try:
-            self.pipeline = Pipeline(steps=[('imputer', None), ('one_hot_encoder', None), ('feature_dropper', None)])
+            self.pipeline = Pipeline(steps=[('Imputer', None),
+                                            ('OneHotEncoder', None),
+                                            ('FeatureDropper', None),
+                                            ('GenericDataFrameTransformer', None)])
 
-            if 'imputer' in self.config['pipeline']:
-                self.pipeline.set_params(imputer=imputer())
-            if 'one_hot_encoder' in self.config['pipeline']:
-                self.pipeline.set_params(one_hot_encoder=one_hot_encoder())
-            if 'feature_dropper' in self.config['pipeline']:
-                self.pipeline.set_params(feature_dropper=feature_dropper())
+            if 'Imputer' in config:
+                self.pipeline.set_params(Imputer=Imputer(config['Imputer']))
+            if 'OneHotEncoder' in config:
+                self.pipeline.set_params(OneHotEncoder=OneHotEncoder(config['OneHotEncoder']))
+            if 'FeatureDropper' in config:
+                self.pipeline.set_params(FeatureDropper=FeatureDropper(config['FeatureDropper']))
+            if 'GenericDataFrameTransformer' in config:
+                self.pipeline.set_params(GenericDataFrameTransformer=GenericDataFrameTransformer(config['GenericDataFrameTransformer']))
+            
+            logger.info(f"Pipeline created:\n{str(self.pipeline)}")
+            return self.pipeline
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
 
-    def run_pipeline(self):
+    def run_pipeline(self, config: dict):
         try:
             self.processed_data = self.data.copy()
 
-            if 'imputer' in self.config['pipeline']:
-                self.processed_data = self.pipeline.named_steps['imputer'].transform(self.processed_data, self.config["pipeline"])
-            if 'one_hot_encoder' in self.config['pipeline']:    
-                self.processed_data = self.pipeline.named_steps['one_hot_encoder'].transform(self.processed_data, self.config["pipeline"])
-            if 'feature_dropper' in self.config['pipeline']:
-                self.processed_data = self.pipeline.named_steps['feature_dropper'].transform(self.processed_data, self.config["pipeline"])
-            logger.info(f"Data after preparation:\n{str(self.processed_data[:5].T)}")
+            if 'Imputer' in config:
+                self.processed_data = self.pipeline.named_steps['Imputer'].transform(self.processed_data)
+            if 'OneHotEncoder' in config:    
+                self.processed_data = self.pipeline.named_steps['OneHotEncoder'].transform(self.processed_data)
+            if 'FeatureDropper' in config:
+                self.processed_data = self.pipeline.named_steps['FeatureDropper'].transform(self.processed_data)
+            if 'GenericDataFrameTransformer' in config:
+                self.processed_data = self.pipeline.named_steps['GenericDataFrameTransformer'].transform(self.processed_data)
+
+            logger.info(f"{self.filename} has been processed by the pipeline.")
+            return self.processed_data
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 
     def run(self):
-        logger.info(f"Start data_preparation with config:\n{yaml.dump(self.config, default_flow_style=False)}")
-        if self.config["input_file"]:
-            self.data = helpers.read_data(file_config=self.config["input_file"])
-        else:
-            logger.error(f"Error in run: No input file")
+        try:
+            self.build_pipeline(config=self.config["pipeline"])
+            self.run_pipeline(config=self.config["pipeline"])
+        except Exception as e:
+            logger.error(f"Error in run: {e}")
             self.cancel()
-
-        if self.config["pipeline"]:
-            self.build_pipeline()
-            if self.config["pipeline"]["run"]:
-                self.run_pipeline()
 
     def cancel(self):
         logger.info(f"Cancel data_preparation")
