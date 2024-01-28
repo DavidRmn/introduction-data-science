@@ -9,7 +9,6 @@ import idstools._helpers as helpers
 pd.set_option('display.precision', 2)
 logger = helpers.setup_logging('data_explorer')
 
-
 class data_explorer():
     """This class is used to explore the data."""
     def __init__(self, config: dict):
@@ -18,13 +17,14 @@ class data_explorer():
         self.config = config
 
         if not self.config["input_file"]:
-            logger.error(f"Error in run: No input file specified.")
-            self.cancel()
+            self.cancel(cls=__class__, reason="No input file specified.")
         self.data = helpers.read_data(file_config=self.config["input_file"])
 
         if not self.config["output_path"]:
             logger.info(f"No output path specified. Using default path: {Path(__file__).parent.parent.parent}/results")
             self.output_path = Path(__file__).parent.parent.parent / "results"
+        else:
+            self.output_path = Path(self.config["output_path"])
 
         self.description = pd.DataFrame
         self.filename = Path(self.config["input_file"]["path"]).stem
@@ -63,14 +63,16 @@ class data_explorer():
         except Exception as e:
             logger.error(f"Error in correlation: {e}")
 
-    def run(self):        
-        if self.config["discriptiv_analysis"]:
-            self.descriptive_analysis()
-        if self.config["missing_value_analysis"]:
-            self.missing_value_analysis()
-        if self.config["correlation_analysis"]:
-            self.correlation_analysis()
+    def run(self):
+        for explorer in self.config["pipeline"]:
+            try:
+                method = getattr(self, explorer)
+                method()
+            except AttributeError:
+                logger.warning(f"{explorer} is not a valid explorer.")
+            except Exception as e:
+                self.cancel(cls=__class__, reason=f"Error in run: {e}")
 
-    def cancel(self):
-        logger.info(f"Cancel data_explorer")
+    def cancel(self, cls, reason):
+        logger.info(f"Cancel {cls} of data_explorer due to {reason}")
         exit(1)

@@ -10,7 +10,7 @@ import idstools._helpers as helpers
 
 logger = helpers.setup_logging('data_preparation')
 
-class Imputer(BaseEstimator, TransformerMixin):
+class _SimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
 
@@ -23,7 +23,7 @@ class Imputer(BaseEstimator, TransformerMixin):
             X[element["target"]] = imputer.fit_transform(X[[element["target"]]])
         return X
     
-class OneHotEncoder(BaseEstimator, TransformerMixin):
+class _OneHotEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
 
@@ -37,7 +37,7 @@ class OneHotEncoder(BaseEstimator, TransformerMixin):
             X = X.drop([element["target"]], axis=1)
         return X
     
-class FeatureDropper(BaseEstimator, TransformerMixin):
+class _FeatureDropper(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
 
@@ -49,7 +49,7 @@ class FeatureDropper(BaseEstimator, TransformerMixin):
             X = X.drop([element["target"]], **element["config"])
         return X
 
-class GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
+class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
 
@@ -82,20 +82,21 @@ class data_preparation():
         self.config = config
 
         if not self.config["input_file"]:
-            logger.error(f"Error in run: No input file specified.")
-            self.cancel()
+            self.cancel(cls=__class__, reason="No input file specified.")
         self.data = helpers.read_data(file_config=self.config["input_file"])
 
         if not self.config["output_path"]:
-            logger.info(f"No output path specified. Using default path: {Path(__file__).parent.parent.parent}/results")
+            logger.info(f"No output path specified. Using default path:\
+                        {Path(__file__).parent.parent.parent}/results")
             self.output_path = Path(__file__).parent.parent.parent / "results"
+        else:
+            self.output_path = Path(self.config["output_path"])
         
         self.filename = Path(self.config["input_file"]["path"]).stem
 
     def build_pipeline(self, config: dict):
         try:
             self.pipeline = Pipeline(steps=[(transformer, None) for transformer in config])
-            print(self.pipeline)
             for transformer in config:
                 self.pipeline.set_params(**{transformer: eval(transformer)(config=config[transformer])})
             logger.info(f"Pipeline created:\n{str(self.pipeline)}")
@@ -125,9 +126,8 @@ class data_preparation():
             _ = self.run_pipeline(config=self.config["pipeline"])
             self.write_data()
         except Exception as e:
-            logger.error(f"Error in run: {e}")
-            self.cancel()
+            self.cancel(cls=__class__, reason=f"Error in run: {e}")
 
-    def cancel(self):
-        logger.info(f"Cancel data_preparation")
+    def cancel(self, cls, reason):
+        logger.info(f"Cancel {cls} of data_explorer due to {reason}")
         exit(1)
