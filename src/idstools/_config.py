@@ -8,7 +8,7 @@ settings = Dynaconf(
     envvar_prefix="IDSTOOLS",
     settings_files=[
         f'{str(project_root)}/config/idstools/config.yml',
-        f'{str(project_root)}/config/logging/config.yaml',
+        f'{str(project_root)}/config/logging/config.yml',
         f'{str(project_root)}/config/.secrets.yml'
         ],
     environments=[
