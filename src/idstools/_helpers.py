@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 
 
-logging_config_path=Path(__file__).parent.parent.parent / 'config' / 'logging_config.yml'
+logging_config_path=Path(__file__).parent.parent.parent / 'config' / 'logging' / 'config.yml'
 
 def setup_logging(module_name):
     package_root = Path(__file__).resolve().parent.parent.parent
@@ -20,13 +20,13 @@ def setup_logging(module_name):
         config = yaml.safe_load(config_file)
 
     # Update the filename in the file_handler
-    if 'handlers' in config and 'file_handler' in config['handlers']:
-        config['handlers']['file_handler']['filename'] = str(log_file_path)
+    if 'handlers' in config['default'] and 'file_handler' in config['default']['handlers']:
+        config['default']['handlers']['file_handler']['filename'] = str(log_file_path)
 
     logger = logging.getLogger('default')
     # Configure logging for the specific module
-    if module_name in config['loggers']:
-        logging.config.dictConfig(config)
+    if module_name in config['default']['loggers']:
+        logging.config.dictConfig(config['default'])
         logger = logging.getLogger(module_name)
     else:
         logging.basicConfig(level=logging.WARNING)  # Fallback if module not found in config
