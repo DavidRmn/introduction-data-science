@@ -1,6 +1,6 @@
 import sklearn as sk
 
-class model_optimization():
+class ModelOptimization():
     """This class is used to optimize the model."""
     def __init__(self, config: dict):
         self.config = config

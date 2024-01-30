@@ -1,45 +1,36 @@
-from altair import Union
-import yaml
 import logging
 import logging.config
 import pandas as pd
-
-
 from pathlib import Path
-
-
-logging_config_path=Path(__file__).parent.parent.parent / 'config' / 'logging' / 'config.yml'
+from idstools._config import settings
 
 def setup_logging(module_name):
-    package_root = Path(__file__).resolve().parent.parent.parent
-    log_file_path = package_root / 'results' / 'idstools.log'
+    """Setup logging with the provided module name"""
+    logfile_path = Path(__file__).parent.parent.parent / 'results' / 'idstools.log'
     # Ensure the /results directory exists
-    log_file_path.parent.mkdir(parents=True, exist_ok=True)
-    # Load the logging configuration from the YAML file
-    with open(logging_config_path, 'r') as config_file:
-        config = yaml.safe_load(config_file)
+    logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Update the filename in the file_handler
-    if 'handlers' in config['default'] and 'file_handler' in config['default']['handlers']:
-        config['default']['handlers']['file_handler']['filename'] = str(log_file_path)
+    if 'handlers' in settings.logging and 'file_handler' in settings.logging.handlers:
+        settings.set('logging.handlers.file_handler.filename', str(logfile_path))
 
     logger = logging.getLogger('default')
-    # Configure logging for the specific module
-    if module_name in config['default']['loggers']:
-        logging.config.dictConfig(config['default'])
+
+    if module_name in settings.logging.loggers:
+        logging.config.dictConfig(settings.logging)
         logger = logging.getLogger(module_name)
     else:
-        logging.basicConfig(level=logging.WARNING)  # Fallback if module not found in config
+        logging.basicConfig(level=logging.WARNING)
 
     return logger
 
 logger = setup_logging(__name__)
 
-def read_data(file_config: dict) -> pd.DataFrame:
+def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
     data = pd.DataFrame()
     try:
-        if file_config["type"] == "csv":
-            data = pd.read_csv(file_config["path"], sep=file_config["sep"])
+        if file_type == "csv":
+            data = pd.read_csv(file_path, sep=separator)
     except Exception as e:
         logger.error(f"Error in read_data: {e}")
 

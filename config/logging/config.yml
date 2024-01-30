@@ -1,39 +1,40 @@
 default:
-  version: 1
-  formatters:
-    simple:
-      format: "%(asctime)s [%(module)s] [%(levelname)s] - %(message)s"
-  handlers:
-    console_handler:
-      class: logging.StreamHandler
-      level: DEBUG
-      formatter: simple
-    file_handler:
-      class: logging.FileHandler
-      filename: idstools.log
-      level: DEBUG
-      formatter: simple
-  loggers:
-    _helpers:
-      level: DEBUG
-      handlers: [file_handler]
-      propagate: False
-    data_explorer:
-      level: DEBUG
-      handlers: [file_handler]
-      propagate: False
-    data_preparation:
-      level: DEBUG
-      handlers: [file_handler]
-      propagate: False
-    tqdm:
+  logging:
+    version: 1
+    formatters:
+      simple:
+        format: "%(asctime)s [%(module)s] [%(levelname)s] - %(message)s"
+    handlers:
+      console_handler:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: simple
+      file_handler:
+        class: logging.FileHandler
+        filename: idstools.log
+        level: DEBUG
+        formatter: simple
+    loggers:
+      _helpers:
+        level: DEBUG
+        handlers: [file_handler]
+        propagate: False
+      data_explorer:
+        level: DEBUG
+        handlers: [file_handler]
+        propagate: False
+      data_preparation:
+        level: DEBUG
+        handlers: [file_handler]
+        propagate: False
+      tqdm:
+        level: INFO
+        handlers: [file_handler]
+        propagate: False
+      lightgbm:
+        level: INFO
+        handlers: [file_handler]
+        propagate: False
+    root:
       level: INFO
-      handlers: [file_handler]
-      propagate: False
-    lightgbm:
-      level: INFO
-      handlers: [file_handler]
-      propagate: False
-  root:
-    level: INFO
-    handlers: [console_handler, file_handler]
+      handlers: [console_handler, file_handler]

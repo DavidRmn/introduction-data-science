@@ -74,7 +74,7 @@ class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
             X = func(X, **element.get("config", {}))
         return X
 
-class data_preparation():
+class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
     def __init__(self, config: dict):
         logger.info(f"Start data_preparation with config: \
@@ -83,7 +83,7 @@ class data_preparation():
 
         if not self.config["input_file"]:
             self.cancel(cls=__class__, reason="No input file specified.")
-        self.data = helpers.read_data(file_config=self.config["input_file"])
+        self.data = helpers.read_data(file_path=self.config["input_file"]["path"], file_type=self.config["input_file"]["type"], separator=self.config["input_file"]["separator"])
 
         if not self.config["output_path"]:
             logger.info(f"No output path specified. Using default path:\

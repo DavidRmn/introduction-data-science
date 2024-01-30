@@ -9,7 +9,7 @@ import idstools._helpers as helpers
 pd.set_option('display.precision', 2)
 logger = helpers.setup_logging('data_explorer')
 
-class data_explorer():
+class DataExplorer():
     """This class is used to explore the data."""
     def __init__(self, config: dict):
         logger.info(f"Start data_explorer with config: \
@@ -18,7 +18,7 @@ class data_explorer():
 
         if not self.config["input_file"]:
             self.cancel(cls=__class__, reason="No input file specified.")
-        self.data = helpers.read_data(file_config=self.config["input_file"])
+        self.data = helpers.read_data(file_path=self.config["input_file"]["path"], file_type=self.config["input_file"]["type"], separator=self.config["input_file"]["separator"])
 
         if not self.config["output_path"]:
             logger.info(f"No output path specified. Using default path: {Path(__file__).parent.parent.parent}/results")

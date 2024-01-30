@@ -2,14 +2,14 @@
 from pathlib import Path
 from dynaconf import Dynaconf
 
-project_root = Path(__file__).parent.parent.parent
+config_root = Path(__file__).parent.parent.parent / "config"
 
 settings = Dynaconf(
     envvar_prefix="IDSTOOLS",
     settings_files=[
-        f'{str(project_root)}/config/idstools/config.yml',
-        f'{str(project_root)}/config/logging/config.yml',
-        f'{str(project_root)}/config/.secrets.yml'
+        f'{str(config_root)}/idstools/config.yml',
+        f'{str(config_root)}/logging/config.yml',
+        f'{str(config_root)}/.secrets.yml'
         ],
     environments=[
         "default",
