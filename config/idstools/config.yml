@@ -1,11 +1,9 @@
 # This file contains the configuration for the idstools package.
-modules:
+config:
   # Configuration for the data_explorer module
   data_explorer:
     # Name of the class to be used
-    class_name: "DataExplorer"
-    # Configuration for the class
-    class_config:
+    DataExplorer:
       # Path to save the results of data exploration
       output_path: Null
       # Specifications for the input data file
@@ -27,9 +25,7 @@ modules:
   # Configuration for the data_preparation module
   data_preparation:
     # Name of the class to be used
-    class_name: "DataPreparation"
-    # Configuration for the class
-    class_config:
+    DataPreparation:
       # Path to save the results of data preparation
       output_path: Null
       # Specifications for the input data file
@@ -69,8 +65,7 @@ modules:
 
   # Configuration for the model_optimization module
   model_optimization:
-    class_name: "ModelOptimization"
-    class_config:
+    ModelOptimization:
       # Path to save the results of model optimization
       output_path: Null
 

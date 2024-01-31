@@ -2,34 +2,21 @@ import logging
 import logging.config
 import pandas as pd
 from pathlib import Path
-from idstools._config import logging_config
+from idstools._config import _logging
 
 def setup_logging(module_name):
-    """Setup logging with the provided module name"""
-    logfile_path = Path(
-        __file__
-        ).parent.parent.parent / 'results' / 'idstools.log'
-    # Ensure the /results directory exists
-    logfile_path.parent.mkdir(
-        parents=True,
-        exist_ok=True
-        )
+    # Set the logfile path
+    logfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / 'idstools.log'
+    logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Update the filename in the file_handler
-    if 'handlers' in logging_config.logging and 'file_handler' in logging_config.logging.handlers:
-        logging_config.set(
-            'logging_config.logging.handlers.file_handler.filename',
-            str(logfile_path)
-            )
+    _logging.config.handlers.file_handler.filename = str(logfile_path)
 
-    logger = logging.getLogger('logging')
+    # Apply the logging configuration
+    logging.config.dictConfig(_logging.config.items())
 
-    if module_name in logging_config.logging.loggers:
-        logging.config.dictConfig(logging_config.logging)
-        logger = logging.getLogger(module_name)
-    else:
-        logging.basicConfig(level=logging.WARNING)
-
+    # Get the logger for the module
+    logger = logging.getLogger(module_name)
     return logger
 
 logger = setup_logging(__name__)
@@ -47,12 +34,12 @@ def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
 
     return data
 
-def write_data(data: pd.DataFrame, output_path: Path, filename: str):
+def write_data(data: pd.DataFrame, output_path: str):
     try:
         data.to_csv(
-            output_path / filename,
+            Path(output_path),
             index=False
             )
-        logger.info(f"Data written to: {output_path / filename}")
+        logger.info(f"Data written to: {output_path}")
     except Exception as e:
         logger.error(f"Error in write_data: {e}")
