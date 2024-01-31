@@ -1,4 +1,4 @@
-config:
+default:
   version: 1
   formatters:
     simple:

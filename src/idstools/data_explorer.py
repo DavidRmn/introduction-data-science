@@ -50,11 +50,12 @@ class DataExplorer():
 
     def generate_and_save_plot(self, plot_function):
         try:
+            path = self.output_path / Path(self.filename + "_" + str(plot_function).split('.')[1] + ".png")
             plt.figure()
             plot_function(self.data)
-            plt.savefig(self.output_path / Path(self.filename + "_" + str(plot_function).split('.')[1] + ".png"))
+            plt.savefig(path)
             plt.close()
-            logger.info(f"Plot created for {self.filename}")
+            logger.info(f"Plot saved for {self.filename}\n{path}")
         except Exception as e:
             logger.error(f"Error in generating and saving plot ({self.filename}): {e}")
 

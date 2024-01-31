@@ -10,10 +10,10 @@ def setup_logging(module_name):
     logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Update the filename in the file_handler
-    _logging.config.handlers.file_handler.filename = str(logfile_path)
+    _logging.default.handlers.file_handler.filename = str(logfile_path)
 
     # Apply the logging configuration
-    logging.config.dictConfig(_logging.config.to_dict())
+    logging.config.dictConfig(_logging.default.to_dict())
 
     # Get the logger for the module
     logger = logging.getLogger(module_name)
