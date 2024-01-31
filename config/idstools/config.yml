@@ -18,7 +18,8 @@ default:
           descriptive_analysis: True  # Enables analysis of basic descriptive statistics (e.g., mean, median).
           # Uncomment the following lines to enable additional analyses.
           missing_value_matrix_plot: True  # Enables analysis of missing values in the dataset.
-          #correlation_analysis: True  # Enables analysis of feature correlations.
+          missing_value_bar_plot: True  # Enables analysis of missing values in the dataset.
+          correlation_heatmap_plot: True  # Enables analysis of feature correlations.
           #outliers_analysis: True  # Enables detection and analysis of outliers in the dataset.
 
     # Data Preparation Module Configuration
@@ -66,3 +67,13 @@ default:
         evaluation:
           metric: rmse  # Metric for model evaluation, e.g., Root Mean Squared Error.
           cv: 5  # Number of folds for cross-validation.
+  
+  custom1:
+    model_optimization:
+      ModelOptimization:
+        Hello: Doreen
+
+  custom2:
+    model_optimization:
+      ModelOptimization:
+        Hello: David

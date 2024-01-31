@@ -1,4 +1,3 @@
-import yaml
 import pandas as pd
 import seaborn as sns
 from pathlib import Path
@@ -40,13 +39,15 @@ class DataExplorer():
     def descriptive_analysis(self):
         try:
             self.head = self.data.head().T
+            self.info = self.data.info()
             self.types = self.data.dtypes
             self.description = self.data.describe().T
             logger.info(f"Head of {self.filename}\n{str(self.head)}\n")
+            logger.info(f"Info of {self.filename}\n{str(self.data.info())}\n")
             logger.info(f"Types of {self.filename}\n{str(self.types)}\n")
             logger.info(f"Description of {self.filename}\n{str(self.description)}\n")
         except Exception as e:
-            logger.error(f"Error in discriptive_analysis: {e}")
+            logger.error(f"Error in descriptive_analysis: {e}")
 
     def generate_and_save_plot(self, plot_function):
         try:
