@@ -12,84 +12,72 @@ logger = helpers.setup_logging(__name__)
 
 class DataExplorer():
     """This class is used to explore the data."""
-    def __init__(self, config: dict = {}):
-        if config:
-            logger.info(
-                f"Config was provided setting config: \
-                \n{yaml.dump(config, default_flow_style=False)}")
-            _idstools.set(
-                _idstools.config.data_explorer,
-                config
+    def __init__(self, input_file: dict, output_path: str, pipeline: dict = {}):
+        try:
+            logger.info("Initializing DataExplorer")
+            self.data = helpers.read_data(
+                file_path=input_file["path"],
+                file_type=input_file["type"],
+                separator=input_file["separator"],
                 )
-        logger.info(
-            f"Start data_explorer with config: \
-            \n{yaml.dump(_idstools.config.data_explorer.to_dict(), default_flow_style=False)}")
-
-        if not _idstools.config.data_explorer.DataExplorer.input_file:
-            self.cancel(
-                cls=__class__,
-                reason="No input file specified."
-                )
-        self.data = helpers.read_data(
-            file_path=_idstools.config.data_explorer.DataExplorer.input_file.path,
-            file_type=_idstools.config.data_explorer.DataExplorer.input_file.type,
-            separator=_idstools.config.data_explorer.DataExplorer.input_file.separator
-            )
-
-        if not _idstools.config.data_explorer.DataExplorer.output_path:
-            logger.info(
-                f"No output path specified.\
-                \nUsing default path: {Path(__file__).parent.parent.parent}/results"
-                )
-            _idstools.set(
-                _idstools.config.data_explorer.DataExplorer.output_path,
-                Path(__file__).parent.parent.parent / "results"
-            )
-
-        self.description = pd.DataFrame
-        self.filename = Path(
-            _idstools.config.data_explorer.DataExplorer.input_file.path
-            ).stem
-        self.output_path = _idstools.config.data_explorer.DataExplorer.output_path
-        self.pipeline = _idstools.config.data_explorer.DataExplorer.pipeline
+            self.filename = Path(input_file["path"]).stem
+            if not output_path:
+                self.output_path = Path(__file__).parent.parent.parent / "results"
+                logger.info(f"No output path specified.\
+                            \nUsing default output path:{self.output_path}")
+            else:
+                logger.info(f"Using output path: {output_path}")
+                self.output_path = output_path
+            if not pipeline:
+                    logger.info("No pipeline specified. Using default pipeline.")
+                    self.pipeline = _idstools.default["example"]["data_explorer"]["DataExplorer"]["pipeline"]
+            else:
+                logger.info(f"Using pipeline: {pipeline}")
+                self.pipeline = pipeline
+        except Exception as e:
+            self.cancel(cls=__class__, reason=f"Error in __init__: {e}")
 
     def descriptive_analysis(self):
         try:
+            self.head = self.data.head().T
+            self.types = self.data.dtypes
             self.description = self.data.describe().T
-            logger.info(f"Descriptive Analysis of {self.filename}\n{str(self.description)}\n")
+            logger.info(f"Head of {self.filename}\n{str(self.head)}\n")
+            logger.info(f"Types of {self.filename}\n{str(self.types)}\n")
+            logger.info(f"Description of {self.filename}\n{str(self.description)}\n")
         except Exception as e:
             logger.error(f"Error in discriptive_analysis: {e}")
 
-    def missing_value_analysis(self):
+    def generate_and_save_plot(self, plot_function):
         try:
             plt.figure()
-            msno.matrix(self.data)
-            plt.savefig(f'{self.output_path}/{self.filename}_matrix_plot.png')
+            plot_function(self.data)
+            plt.savefig(self.output_path / Path(self.filename + "_" + str(plot_function).split('.')[1] + ".png"))
             plt.close()
-
-            plt.figure()
-            msno.bar(self.data)
-            plt.savefig(f'{self.output_path}/{self.filename}_bar_plot.png')
-            plt.close()
-
-            logger.info(f"Missing Values plots created for {self.filename}")
-            logger.info(f"Plots saved as:\n{self.filename}_matrix_plot.png\n{self.filename}_bar_plot.png\n{self.filename}_heatmap_plot.png")
-
+            logger.info(f"Plot created for {self.filename}")
         except Exception as e:
-            logger.error(f"Error in missing_values: {e}")
+            logger.error(f"Error in generating and saving plot ({self.filename}): {e}")
 
-    def correlation_analysis(self):
-        try:
-            plt.figure()
-            sns.heatmap(self.data.corr(numeric_only=True), annot=True, cmap="coolwarm", fmt=".2f")
-            plt.savefig(f'{self.output_path}/{self.filename}_correlation_plot.png')
-            plt.close()
-        except Exception as e:
-            logger.error(f"Error in correlation: {e}")
+    def missing_value_matrix_plot(self):
+        self.generate_and_save_plot(lambda x: msno.matrix(x),)
+
+    def missing_value_bar_plot(self):
+        self.generate_and_save_plot(lambda x: msno.bar(x))
+
+    def correlation_heatmap_plot(self):
+        self.generate_and_save_plot(
+            lambda x: sns.heatmap(
+                x.corr(numeric_only=True),
+                annot=True,
+                cmap="coolwarm",
+                fmt=".2f"
+                )
+            )
 
     def run(self):
         for explorer in self.pipeline:
             try:
+                logger.info(f"Running {explorer} of data_explorer")
                 method = getattr(self, explorer)
                 method()
             except AttributeError:

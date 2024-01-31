@@ -14,23 +14,31 @@ config:
       level: DEBUG
       formatter: simple
   loggers:
-    _helpers:
+    idstools:
       level: DEBUG
-      handlers: [file_handler]
+      handlers: [file_handler, console_handler]
       propagate: False
-    data_explorer:
+    idstools._config:
       level: DEBUG
-      handlers: [file_handler]
+      handlers: [file_handler, console_handler]
       propagate: False
-    data_preparation:
+    idstools._helpers:
       level: DEBUG
-      handlers: [file_handler]
+      handlers: [file_handler, console_handler]
+      propagate: False
+    idstools.data_explorer:
+      level: DEBUG
+      handlers: [file_handler, console_handler]
+      propagate: False
+    idstools.data_preparation:
+      level: DEBUG
+      handlers: [file_handler, console_handler]
+      propagate: False
+    idstools.wrapper:
+      level: DEBUG
+      handlers: [file_handler, console_handler]
       propagate: False
     tqdm:
-      level: INFO
-      handlers: [file_handler]
-      propagate: False
-    lightgbm:
       level: INFO
       handlers: [file_handler]
       propagate: False

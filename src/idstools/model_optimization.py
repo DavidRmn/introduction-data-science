@@ -4,7 +4,9 @@ logger = setup_logging(__name__)
 
 class ModelOptimization():
     """This class is used to optimize the model."""
-    def __init__(self, config: dict = {}):
+    def __init__(self, **kwargs):
+        logger.info("Initializing ModelOptimization")
+        logger.debug(f"{kwargs}")
         pass
 
     def console_output(self):
