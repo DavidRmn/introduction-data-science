@@ -5,29 +5,61 @@ from pathlib import Path
 import missingno as msno
 import matplotlib.pyplot as plt
 import idstools._helpers as helpers
+from idstools._config import idstools_config
 
 pd.set_option('display.precision', 2)
-logger = helpers.setup_logging('data_explorer')
+logger = helpers.setup_logging(__name__)
 
 class DataExplorer():
     """This class is used to explore the data."""
-    def __init__(self, config: dict):
-        logger.info(f"Start data_explorer with config: \
-                    \n{yaml.dump(config, default_flow_style=False)}")
-        self.config = config
+    def __init__(self, config: dict = {}):
+        if config:
+            logger.info(
+                f"Config was provided setting config:\n{yaml.dump(
+                    config, default_flow_style=False
+                    )}")
+            idstools_config.set(
+                idstools_config.modules.data_explorer,
+                config
+                )
+        logger.info(
+            f"Start data_explorer with config:\n{yaml.dump(
+                idstools_config.modules.data_explorer,
+                default_flow_style=False
+                )}")
 
-        if not self.config["input_file"]:
-            self.cancel(cls=__class__, reason="No input file specified.")
-        self.data = helpers.read_data(file_path=self.config["input_file"]["path"], file_type=self.config["input_file"]["type"], separator=self.config["input_file"]["separator"])
+        if not idstools_config.modules.data_explorer.input_file:
+            self.cancel(
+                cls=__class__,
+                reason="No input file specified."
+                )
+        self.data = helpers.read_data(
+            file_path=idstools_config.modules.data_explorer.input_file.path,
+            file_type=idstools_config.modules.data_explorer.input_file.type,
+            separator=idstools_config.modules.data_explorer.input_file.separator
+            )
 
-        if not self.config["output_path"]:
-            logger.info(f"No output path specified. Using default path: {Path(__file__).parent.parent.parent}/results")
-            self.output_path = Path(__file__).parent.parent.parent / "results"
+        if not idstools_config.modules.data_explorer.output_path:
+            logger.info(
+                f"No output path specified. Using default path: \
+                {Path(__file__).parent.parent.parent}/results"
+                )
+            idstools_config.set(
+                idstools_config.modules.data_explorer.output_path,
+                Path(__file__).parent.parent.parent / "results"
+            )
         else:
-            self.output_path = Path(self.config["output_path"])
+            idstools_config.set(
+                idstools_config.modules.data_explorer.output_path,
+                Path(idstools_config.modules.data_explorer.output_path)
+            )
 
         self.description = pd.DataFrame
-        self.filename = Path(self.config["input_file"]["path"]).stem
+        self.filename = Path(
+            idstools_config.modules.data_explorer.input_file.file_path
+            ).stem
+        self.output_path = idstools_config.modules.data_explorer.output_path
+        self.pipeline = idstools_config.modules.data_explorer.pipeline
 
     def descriptive_analysis(self):
         try:
@@ -64,7 +96,7 @@ class DataExplorer():
             logger.error(f"Error in correlation: {e}")
 
     def run(self):
-        for explorer in self.config["pipeline"]:
+        for explorer in self.pipeline:
             try:
                 method = getattr(self, explorer)
                 method()

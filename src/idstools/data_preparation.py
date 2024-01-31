@@ -5,10 +5,10 @@ from pathlib import Path
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
-
 import idstools._helpers as helpers
+from idstools._config import idstools_config
 
-logger = helpers.setup_logging('data_preparation')
+logger = helpers.setup_logging(__name__)
 
 class _SimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):

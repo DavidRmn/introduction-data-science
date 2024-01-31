@@ -1,79 +1,80 @@
-default:
-  version: 1
-  idstools:
-    # This configuration file outlines settings for the idstools package, including data exploration,
-    # data preparation, and model optimization modules.
+# This file contains the configuration for the idstools package.
+modules:
+  # Configuration for the data_explorer module
+  data_explorer:
+    # Name of the class to be used
+    class_name: "DataExplorer"
+    # Configuration for the class
+    class_config:
+      # Path to save the results of data exploration
+      output_path: Null
+      # Specifications for the input data file
+      input_file:
+        # File path for the input data
+        path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+        # File format (csv is supported)
+        type: "csv"
+        # Separator used in the CSV file
+        separator: ";"
 
-    # Configuration for the data_explorer module
-    data_explorer:
-      class_name: "DataExplorer"
-      class_config:
-        # Path to save the results of data exploration 
-        output_path: Null
+      # Definition of the data exploration pipeline
+      pipeline:
+        descriptive_analysis: True  # Analyze descriptive statistics of the dataset
+        #missing_value_analysis: True  # Analyze missing values in the dataset
+        #correlation_analysis: True  # Analyze correlations in the dataset
+        #outliers_analysis: True  # Analyze outliers in the dataset
 
-        # Specifications for the input data file
-        input_file:
-          # File path for the input data
-          path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
-          # File format (csv is supported)
-          type: "csv"
-          # Separator used in the CSV file
-          separator: ";"
+  # Configuration for the data_preparation module
+  data_preparation:
+    # Name of the class to be used
+    class_name: "DataPreparation"
+    # Configuration for the class
+    class_config:
+      # Path to save the results of data preparation
+      output_path: Null
+      # Specifications for the input data file
+      input_file:
+        # File path for the input data
+        path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+        # File format (csv is supported)
+        type: "csv"
+        # Separator used in the CSV file
+        separator: ";"
 
-        # Flags to enable/disable specific analyses in the data exploration process
-        pipeline:
-          descriptive_analysis: True  # Perform descriptive analysis
-          #missing_value_analysis: True  # Analyze missing values in the dataset
-          #correlation_analysis: True  # Conduct correlation analysis
-          #outliers_analysis: True  # Examine outliers
+      # Definition of the data preparation pipeline
+      pipeline:
+        # Configuration for the SimpleImputer transformer
+        _SimpleImputer: 
+          - target: "hum"  # Target column for imputation
+            config:
+              strategy: "mean"  # Imputation strategy (mean value)
 
-    # Configuration for the data_preparation module
-    data_preparation:
-      class_name: "DataPreparation"
-      class_config:
-        # Path to save the results of data preparation
-        output_path: Null
+        # Configuration for the OneHotEncoder transformer
+        _OneHotEncoder: 
+          - target: "season"  # Column to be one-hot encoded
+            config:
+              prefix: "season"  # Prefix for the new columns
+              dtype: "int"  # Data type of the encoded columns
+          - target: "mnth"
+            config:
+              prefix: "month"
+              dtype: "int"
 
-        # Specifications for the input data file
-        input_file:
-          path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
-          type: "csv"
-          separator: ";"
+        # Configuration for the FeatureDropper transformer
+        _FeatureDropper: 
+          - target: "instant"  # Column to be dropped
+            config:
+              axis: 1  # Axis along which the column will be dropped
+              errors: "ignore"  # Error handling strategy
 
-        # Definition of the data preparation pipeline
-        pipeline:
-          # Configuration for the SimpleImputer transformer
-          _SimpleImputer: 
-            - target: "hum"  # Target column for imputation
-              config:
-                strategy: "mean"  # Imputation strategy (mean value)
+  # Configuration for the model_optimization module
+  model_optimization:
+    class_name: "ModelOptimization"
+    class_config:
+      # Path to save the results of model optimization
+      output_path: Null
 
-          # Configuration for the OneHotEncoder transformer
-          _OneHotEncoder: 
-            - target: "season"  # Column to be one-hot encoded
-              config:
-                prefix: "season"  # Prefix for the new columns
-                dtype: "int"  # Data type of the encoded columns
-            - target: "mnth"
-              config:
-                prefix: "month"
-                dtype: "int"
-
-          # Configuration for the FeatureDropper transformer
-          _FeatureDropper: 
-            - target: "instant"  # Column to be dropped
-              config:
-                axis: 1  # Axis along which the column will be dropped
-                errors: "ignore"  # Error handling strategy
-
-    # Configuration for the model_optimization module
-    model_optimization:
-      class_name: "ModelOptimization"
-      class_config:
-        # Path to save the results of model optimization
-        output_path: Null
-
-        # Settings for evaluating the model optimization process
-        evaluation:
-          metric: "rmse"  # Evaluation metric (Root Mean Squared Error)
-          cv: 5  # Number of cross-validation folds
+      # Settings for evaluating the model optimization process
+      evaluation:
+        metric: "rmse"  # Evaluation metric (Root Mean Squared Error)
+        cv: 5  # Number of cross-validation folds
