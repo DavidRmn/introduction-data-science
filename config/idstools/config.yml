@@ -6,10 +6,9 @@ default:
   data_explorer:
     DataExplorer:
       output_path: results  # Output path for saving the results. If Null, results are not saved to a file.
-      input_file:
-        path: data/BikeRentalDaily_train.csv  # Path to the dataset file.
-        type: csv  # Type of the dataset file. Currently, only CSV format is supported.
-        separator: ;  # Character used to separate values in the CSV file.
+      input_path: data/BikeRentalDaily_train.csv  # Path to the dataset file.
+      input_type: csv  # Type of the dataset file. Currently, only CSV format is supported.
+      input_delimiter: ;  # Character used to separate values in the CSV file.
 
       # Pipeline for performing data exploration tasks.
       # Various analyses can be enabled or disabled as needed.
@@ -26,10 +25,9 @@ default:
   data_preparation:
     DataPreparation:
       output_path: Null  # Output path for saving preprocessed data. If Null, data is not saved to a file.
-      input_file:
-        path: data/BikeRentalDaily_train.csv  # Input dataset file path.
-        type: csv  # Dataset file type. Currently, only CSV is supported.
-        separator: ;  # Delimiter used in the CSV file.
+      input_path: data/BikeRentalDaily_train.csv  # Path to the dataset file.
+      input_type: csv  # Type of the dataset file. Currently, only CSV format is supported.
+      input_delimiter: ;  # Character used to separate values in the CSV file.
 
       # Pipeline for data preparation steps.
       # Configurations for data imputation, encoding, and feature selection.
@@ -73,10 +71,9 @@ custom:
   data_explorer:
     DataExplorer:
       output_path: results  # Output path for saving the results. If Null, results are not saved to a file.
-      input_file:
-        path: data/BikeRentalDaily_test.csv  # Path to the dataset file.
-        type: csv  # Type of the dataset file. Currently, only CSV format is supported.
-        separator: ;  # Character used to separate values in the CSV file.
+      input_path: data/BikeRentalDaily_test.csv  # Path to the dataset file.
+      input_type: csv  # Type of the dataset file. Currently, only CSV format is supported.
+      input_delimiter: ;  # Character used to separate values in the CSV file.
 
       # Pipeline for performing data exploration tasks.
       # Various analyses can be enabled or disabled as needed.
@@ -93,10 +90,9 @@ custom:
   data_preparation:
     DataPreparation:
       output_path: Null  # Output path for saving preprocessed data. If Null, data is not saved to a file.
-      input_file:
-        path: data/BikeRentalDaily_test.csv  # Input dataset file path.
-        type: csv  # Dataset file type. Currently, only CSV is supported.
-        separator: ;  # Delimiter used in the CSV file.
+      input_path: data/BikeRentalDaily_test.csv  # Path to the dataset file.
+      input_type: csv  # Type of the dataset file. Currently, only CSV format is supported.
+      input_delimiter: ;  # Character used to separate values in the CSV file.
 
       # Pipeline for data preparation steps.
       # Configurations for data imputation, encoding, and feature selection.

@@ -5,7 +5,6 @@ from pathlib import Path
 import missingno as msno
 import matplotlib.pyplot as plt
 import idstools._helpers as helpers
-from idstools._config import _idstools
 
 pd.set_option('display.precision', 2)
 logger = helpers.setup_logging(__name__)
@@ -13,15 +12,15 @@ logger = helpers.setup_logging(__name__)
 @helpers.emergency_logger
 class DataExplorer():
     """This class is used to explore the data."""
-    def __init__(self, input_file: dict, output_path: str, pipeline: dict = {}):
+    def __init__(self, input_path: str, output_path: str, input_type: str = 'csv', input_delimiter: str = ';', pipeline: dict = {}):
         try:
             logger.info("Initializing DataExplorer")
             self.data = helpers.read_data(
-                file_path=input_file["path"],
-                file_type=input_file["type"],
-                separator=input_file["separator"],
+                file_path=input_path,
+                file_type=input_type,
+                separator=input_delimiter,
                 )
-            self.filename = Path(input_file["path"]).stem
+            self.filename = Path(input_path).stem
             if not output_path:
                 self.output_path = Path(__file__).parent.parent.parent / "results"
                 logger.info(f"No output path specified.\

@@ -81,15 +81,15 @@ class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
 @helpers.emergency_logger
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
-    def __init__(self, input_file: dict, output_path: str, pipeline: dict = {}):
+    def __init__(self, input_path: str, output_path: str, input_type: str = 'csv', input_delimiter: str = ';', pipeline: dict = {}):
         try:
             logger.info("Initializing DataPreparation")
             self.data = helpers.read_data(
-                file_path=input_file["path"],
-                file_type=input_file["type"],
-                separator=input_file["separator"],
+                file_path=input_path,
+                file_type=input_type,
+                separator=input_delimiter,
             )
-            self.filename = Path(input_file["path"]).stem
+            self.filename = Path(input_path).stem
             if not output_path:
                 self.output_path = Path(__file__).parent.parent.parent / "results"
                 logger.info(f"No output path specified.\nUsing default output path:{self.output_path}")
