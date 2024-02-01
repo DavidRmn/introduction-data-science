@@ -1,3 +1,4 @@
+import functools
 import logging
 import logging.config
 import pandas as pd
@@ -21,6 +22,22 @@ def setup_logging(module_name):
 
 logger = setup_logging(__name__)
 
+def emergency_logger(func):
+    """
+    A decorator that logs exceptions at the emergency level.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            # Log the exception with a message indicating it's an emergency
+            logger.error(f"Emergency in '{func.__name__}': {e}", exc_info=True)
+            # Optionally, you can add additional emergency handling logic here
+            # Reraise the exception
+            raise
+    return wrapper
+
 def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
     data = pd.DataFrame()
     try:
@@ -38,8 +55,10 @@ def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
 def write_data(data: pd.DataFrame, output_path: str):
     try:
         logger.info(f"Writing data to:\n{output_path}")
+        path = Path(output_path).resolve()
+        path.parent.mkdir(parents=True, exist_ok=True)
         data.to_csv(
-            Path(output_path).resolve(),
+            path,
             index=False
             )
     except Exception as e:

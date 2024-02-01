@@ -1,3 +1,4 @@
+import io
 import pandas as pd
 import seaborn as sns
 from pathlib import Path
@@ -9,6 +10,7 @@ from idstools._config import _idstools
 pd.set_option('display.precision', 2)
 logger = helpers.setup_logging(__name__)
 
+@helpers.emergency_logger
 class DataExplorer():
     """This class is used to explore the data."""
     def __init__(self, input_file: dict, output_path: str, pipeline: dict = {}):
@@ -26,10 +28,10 @@ class DataExplorer():
                             \nUsing default output path:{self.output_path}")
             else:
                 logger.info(f"Using output path: {output_path}")
-                self.output_path = output_path
-            if not pipeline:
-                    logger.info("No pipeline specified. Using default pipeline.")
-                    self.pipeline = _idstools.default["example"]["data_explorer"]["DataExplorer"]["pipeline"]
+                self.output_path = Path(output_path).resolve()
+                
+            if pipeline is None:
+                    logger.info("Please provide a pipeline configuration.")
             else:
                 logger.info(f"Using pipeline: {pipeline}")
                 self.pipeline = pipeline
@@ -39,12 +41,18 @@ class DataExplorer():
     def descriptive_analysis(self):
         try:
             self.head = self.data.head().T
-            self.info = self.data.info()
-            self.types = self.data.dtypes
-            self.description = self.data.describe().T
             logger.info(f"Head of {self.filename}\n{str(self.head)}\n")
-            logger.info(f"Info of {self.filename}\n{str(self.data.info())}\n")
+
+            buffer = io.StringIO()
+            self.data.info(buf=buffer)
+            info_str = buffer.getvalue()
+            logger.info(f"Info of {self.filename}\n{info_str}")
+            buffer.close()
+            
+            self.types = self.data.dtypes
             logger.info(f"Types of {self.filename}\n{str(self.types)}\n")
+            
+            self.description = self.data.describe().T
             logger.info(f"Description of {self.filename}\n{str(self.description)}\n")
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
@@ -52,7 +60,7 @@ class DataExplorer():
     def generate_and_save_plot(self, plot_function):
         try:
             path = self.output_path / Path(self.filename + "_" + str(plot_function).split('.')[1] + ".png")
-            plt.figure()
+            plt.figure(figsize=(16, 9))
             plot_function(self.data)
             plt.savefig(path)
             plt.close()

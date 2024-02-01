@@ -10,6 +10,7 @@ from idstools._config import _idstools
 
 logger = helpers.setup_logging(__name__)
 
+@helpers.emergency_logger
 class _SimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -23,6 +24,7 @@ class _SimpleImputer(BaseEstimator, TransformerMixin):
             X[element["target"]] = imputer.fit_transform(X[[element["target"]]])
         return X
     
+@helpers.emergency_logger
 class _OneHotEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -37,6 +39,7 @@ class _OneHotEncoder(BaseEstimator, TransformerMixin):
             X = X.drop([element["target"]], axis=1)
         return X
     
+@helpers.emergency_logger    
 class _FeatureDropper(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -49,6 +52,7 @@ class _FeatureDropper(BaseEstimator, TransformerMixin):
             X = X.drop([element["target"]], **element["config"])
         return X
 
+@helpers.emergency_logger
 class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -74,26 +78,27 @@ class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
             X = func(X, **element.get("config", {}))
         return X
 
+@helpers.emergency_logger
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
-    def __init__(self, input_file: dict, output_path: str, pipeline: dict[str,dict] = {}):
+    def __init__(self, input_file: dict, output_path: str, pipeline: dict = {}):
         try:
             logger.info("Initializing DataPreparation")
             self.data = helpers.read_data(
                 file_path=input_file["path"],
                 file_type=input_file["type"],
                 separator=input_file["separator"],
-                )
+            )
             self.filename = Path(input_file["path"]).stem
             if not output_path:
                 self.output_path = Path(__file__).parent.parent.parent / "results"
                 logger.info(f"No output path specified.\nUsing default output path:{self.output_path}")
             else:
                 logger.info(f"Using output path: {output_path}")
-                self.output_path = output_path
-            if not pipeline:
-                logger.info("No pipeline specified. Using default pipeline.")
-                self.pipeline_cfg = _idstools.default["example"]["data_preparation"]["DataPreparation"]["pipeline"]
+                self.output_path = Path(output_path).resolve()
+            
+            if pipeline is None:
+                logger.info("Please provide a pipeline configuration.")
             else:
                 logger.info(f"Using pipeline: {pipeline}")
                 self.pipeline_cfg = pipeline
