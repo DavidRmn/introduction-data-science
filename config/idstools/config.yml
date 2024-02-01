@@ -121,4 +121,4 @@ custom:
       # Defines the metric and method used for evaluating model performance.
       evaluation:
         metric: mse  # Metric for model evaluation, e.g., Root Mean Squared Error.
-        cv: 10  # Number of folds for cross-validation.
+        cv: 10  # Number of folds for cross-validation.test:

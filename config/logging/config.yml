@@ -42,6 +42,6 @@ default:
       level: INFO
       handlers: [file_handler]
       propagate: False
-  root:
-    level: INFO
-    handlers: [console_handler, file_handler]
+    root:
+      level: INFO
+      handlers: [console_handler, file_handler]

@@ -4,18 +4,19 @@ import seaborn as sns
 from pathlib import Path
 import missingno as msno
 import matplotlib.pyplot as plt
-import idstools._helpers as helpers
+from idstools._config import pprint_dynaconf
+from idstools._helpers import emergency_logger, setup_logging, read_data
 
 pd.set_option('display.precision', 2)
-logger = helpers.setup_logging(__name__)
+logger = setup_logging(__name__)
 
-@helpers.emergency_logger
+@emergency_logger
 class DataExplorer():
     """This class is used to explore the data."""
     def __init__(self, input_path: str, output_path: str, input_type: str = 'csv', input_delimiter: str = ';', pipeline: dict = {}):
         try:
             logger.info("Initializing DataExplorer")
-            self.data = helpers.read_data(
+            self.data = read_data(
                 file_path=input_path,
                 file_type=input_type,
                 separator=input_delimiter,
@@ -32,7 +33,7 @@ class DataExplorer():
             if pipeline is None:
                     logger.info("Please provide a pipeline configuration.")
             else:
-                logger.info(f"Using pipeline: {pipeline}")
+                logger.info(f"Using pipeline:\n{pprint_dynaconf(pipeline)}")
                 self.pipeline = pipeline
         except Exception as e:
             self.cancel(cls=__class__, reason=f"Error in __init__: {e}")

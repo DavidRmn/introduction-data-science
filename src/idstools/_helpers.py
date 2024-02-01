@@ -38,6 +38,7 @@ def emergency_logger(func):
             raise
     return wrapper
 
+@emergency_logger
 def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
     data = pd.DataFrame()
     try:
@@ -52,6 +53,7 @@ def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
 
     return data
 
+@emergency_logger
 def write_data(data: pd.DataFrame, output_path: str):
     try:
         logger.info(f"Writing data to:\n{output_path}")

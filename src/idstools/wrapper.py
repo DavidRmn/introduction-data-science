@@ -11,52 +11,41 @@ class Wrapper:
 
     def __instantiate_modules(self):
         environments = {}
-        logger.debug(f"Found environments: {_idstools.to_dict()}")
-
+        logger.debug("Instantiating environments from configuration.")
         for env_name, config in _idstools.to_dict().items():
-            logger.debug(f"Found environment: {env_name}.")
+            logger.debug(f"Processing environment: {env_name}")
             module_classes = {}
-
             for module_name, module_config in config.items():
-                logger.debug(f"Found module: {module_name} with config: {module_config}")
-
                 try:
                     class_name = next(iter(module_config))
                     module_classes[module_name] = (class_name, module_config[class_name])
-                    logger.debug(f"Instantiated module: {module_name} with class: {class_name}")
-                except KeyError as e:
-                    logger.error(f"Error in module configuration {module_name}: {e}")
+                    logger.debug(f"Configured {class_name} for module {module_name} in environment {env_name}")
                 except Exception as e:
-                    logger.error(f"Unexpected error instantiating module {module_name}: {e}")
-                    raise
-
+                    logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
             environments[env_name] = module_classes
-
+        logger.info("Completed instantiation of environments.")
         return environments
 
-
     def run(self):
-        logger.debug(f"Running environments: {self.environments}")
-        for env_name, modules in tqdm(self.environments.items()):
-            logger.debug(f"Running environment: {env_name}")
-            for module_name, (class_name, class_config) in tqdm(modules.items()):
-                logger.debug(f"Running module: {module_name} with class: {class_name} and config: {class_config}")
-                
-                try:
-                    module_path = f"idstools.{module_name.lower()}"
-                    module = importlib.import_module(module_path)
-                    cls = getattr(module, class_name)
-                    
-                    if hasattr(cls, 'run'):
-                        instance = cls(**class_config)
-                        instance.run()
-                    else:
-                        logger.error(f"No 'run' method found in class {class_name} of module {module_path}")
+        logger.info("Starting execution of environments.")
+        for env_name, modules in tqdm(self.environments.items(), desc="Environments"):
+            logger.info(f"Executing environment: {env_name}")
+            for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {env_name}"):
+                self.initialize_and_run_module(module_name, class_name, class_config)
+        logger.info("Finished execution of all environments.")
 
-                except ImportError:
-                    logger.error(f"Module not found: {module_name}")
-                except AttributeError:
-                    logger.error(f"Class not found: {class_name} in module {module_name}")
-                except Exception as e:
-                    logger.error(f"Error running module {module_name}: {e}")
+    def initialize_and_run_module(self, module_name, class_name, class_config):
+        try:
+            logger.debug(f"Loading module {module_name} for class {class_name}")
+            module_path = f"idstools.{module_name.lower()}"
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
 
+            if hasattr(cls, 'run'):
+                logger.info(f"Instantiating and executing {class_name} in module {module_name}")
+                instance = cls(**class_config)
+                instance.run()
+            else:
+                logger.warning(f"Class {class_name} in module {module_name} does not have a 'run' method")
+        except Exception as e:
+            logger.error(f"Exception during execution of module {module_name}: {e}")

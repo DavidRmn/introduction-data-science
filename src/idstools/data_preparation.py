@@ -1,16 +1,16 @@
-import yaml
 import importlib
 import pandas as pd
 from pathlib import Path
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
-import idstools._helpers as helpers
 from idstools._config import _idstools
+from idstools._config import pprint_dynaconf
+from idstools._helpers import emergency_logger, setup_logging, read_data
 
-logger = helpers.setup_logging(__name__)
+logger = setup_logging(__name__)
 
-@helpers.emergency_logger
+@emergency_logger
 class _SimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -24,7 +24,7 @@ class _SimpleImputer(BaseEstimator, TransformerMixin):
             X[element["target"]] = imputer.fit_transform(X[[element["target"]]])
         return X
     
-@helpers.emergency_logger
+@emergency_logger
 class _OneHotEncoder(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -39,7 +39,7 @@ class _OneHotEncoder(BaseEstimator, TransformerMixin):
             X = X.drop([element["target"]], axis=1)
         return X
     
-@helpers.emergency_logger    
+@emergency_logger    
 class _FeatureDropper(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -52,7 +52,7 @@ class _FeatureDropper(BaseEstimator, TransformerMixin):
             X = X.drop([element["target"]], **element["config"])
         return X
 
-@helpers.emergency_logger
+@emergency_logger
 class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
@@ -78,13 +78,13 @@ class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
             X = func(X, **element.get("config", {}))
         return X
 
-@helpers.emergency_logger
+@emergency_logger
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
     def __init__(self, input_path: str, output_path: str, input_type: str = 'csv', input_delimiter: str = ';', pipeline: dict = {}):
         try:
             logger.info("Initializing DataPreparation")
-            self.data = helpers.read_data(
+            self.data = read_data(
                 file_path=input_path,
                 file_type=input_type,
                 separator=input_delimiter,
@@ -100,7 +100,7 @@ class DataPreparation():
             if pipeline is None:
                 logger.info("Please provide a pipeline configuration.")
             else:
-                logger.info(f"Using pipeline: {pipeline}")
+                logger.info(f"Using pipeline:\n{pprint_dynaconf(pipeline)}")
                 self.pipeline_cfg = pipeline
         except Exception as e:
             self.cancel(cls=__class__, reason=f"Error in __init__: {e}")
@@ -110,7 +110,7 @@ class DataPreparation():
             self.pipeline = Pipeline(steps=[(transformer, None) for transformer in config])
             for transformer in config:
                 self.pipeline.set_params(**{transformer: eval(transformer)(config=config[transformer])})
-            logger.info(f"Pipeline created:\n{str(self.pipeline)}")
+            logger.info(f"Pipeline created.")
             return self.pipeline
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
