@@ -20,7 +20,7 @@ class DataExplorer():
                 logger.error("Please provide an input path.")
             else:
                 self.data = read_data(
-                    file_path=input_path,
+                    file_path=Path(input_path).resolve(),
                     file_type=input_type,
                     separator=input_delimiter,
                     )
