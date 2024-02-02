@@ -132,6 +132,7 @@ class DataPreparation():
     def write_data(self):
         try:
             path = f"{self.output_path}/{self.filename}_processed.csv"
+            path = Path(path).resolve()
             write_data(data=self.processed_data, output_path=path)
         except Exception as e:
             logger.error(f"Error in write_data: {e}")

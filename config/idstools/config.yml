@@ -103,7 +103,7 @@ custom:
               errors: ignore  # How to handle errors during dropping.
         _CustomTransformer:
           - func: replace_dot_with_hyphen  # Function to apply to the target column.
-            module: idstools._custom_pipelines  # Module containing the function.
+            module: idstools._custom_transformer  # Module containing the function.
             config:
               target: dteday  # Target column for transformation.
 
