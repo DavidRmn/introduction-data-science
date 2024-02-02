@@ -39,18 +39,29 @@ def emergency_logger(func):
     return wrapper
 
 @emergency_logger
-def read_data(file_path: str, file_type: str, separator: str) -> pd.DataFrame:
+def conditional_execution(attribute_name):
+    def decorator(func):
+        def wrapper(self, *args, **kwargs):
+            attribute_value = getattr(self, attribute_name)
+            if attribute_value is None:
+                logger.warning(f"Skipping execution of {func.__name__} because {attribute_name} is None.")
+                return
+            return func(self, *args, **kwargs)
+        return wrapper
+    return decorator
+
+@emergency_logger
+def read_data(file_path: str, file_type: str, separator: str | None) -> pd.DataFrame:
     data = pd.DataFrame()
     try:
-        if file_type == "csv":
-            logger.info(f"Reading csv file:\n{file_path}")
+        if file_type in ['csv']:
+            logger.info(f"Reading {file_type} file:\n{file_path}")
             data = pd.read_csv(
                 Path(file_path).resolve(),
                 sep=separator
                 )
     except Exception as e:
         logger.error(f"Error in read_data: {e}")
-
     return data
 
 @emergency_logger

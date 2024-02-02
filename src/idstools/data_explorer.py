@@ -16,25 +16,29 @@ class DataExplorer():
     def __init__(self, input_path: str, output_path: str, input_type: str = 'csv', input_delimiter: str = ';', pipeline: dict = {}):
         try:
             logger.info("Initializing DataExplorer")
-            self.data = read_data(
-                file_path=input_path,
-                file_type=input_type,
-                separator=input_delimiter,
-                )
-            self.filename = Path(input_path).stem
+            if not input_path:
+                logger.error("Please provide an input path.")
+            else:
+                self.data = read_data(
+                    file_path=input_path,
+                    file_type=input_type,
+                    separator=input_delimiter,
+                    )
+                self.filename = Path(input_path).stem
+
             if not output_path:
-                self.output_path = Path(__file__).parent.parent.parent / "results"
-                logger.info(f"No output path specified.\
-                            \nUsing default output path:{self.output_path}")
+                self.output_path = Path('results').resolve()
+                logger.info(f"No output path specified.\nUsing default output path:{self.output_path}")
             else:
                 logger.info(f"Using output path: {output_path}")
                 self.output_path = Path(output_path).resolve()
                 
             if pipeline is None:
-                    logger.info("Please provide a pipeline configuration.")
+                logger.info("Please provide a pipeline configuration.")
             else:
-                logger.info(f"Using pipeline:\n{pprint_dynaconf(pipeline)}")
+                logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
                 self.pipeline = pipeline
+
         except Exception as e:
             self.cancel(cls=__class__, reason=f"Error in __init__: {e}")
 
@@ -87,11 +91,11 @@ class DataExplorer():
     def run(self):
         for explorer in self.pipeline:
             try:
-                logger.info(f"Running {explorer} of data_explorer")
                 method = getattr(self, explorer)
                 method()
+                logger.info(f"Executed {explorer} of data_explorer.")
             except AttributeError:
-                logger.warning(f"{explorer} is not a valid explorer.")
+                logger.error(f"Method {explorer} not found in data_explorer.")
             except Exception as e:
                 self.cancel(cls=__class__, reason=f"Error in run: {e}")
 

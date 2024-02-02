@@ -4,9 +4,8 @@ from pathlib import Path
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
-from idstools._config import _idstools
 from idstools._config import pprint_dynaconf
-from idstools._helpers import emergency_logger, setup_logging, read_data
+from idstools._helpers import emergency_logger, setup_logging, read_data, write_data
 
 logger = setup_logging(__name__)
 
@@ -53,7 +52,7 @@ class _FeatureDropper(BaseEstimator, TransformerMixin):
         return X
 
 @emergency_logger
-class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
+class _CustomTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
         self.config = config
 
@@ -74,7 +73,7 @@ class _GenericDataFrameTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         for element in self.config:
-            func = self._retrieve_function(element["transform_func"], element.get("module"))
+            func = self._retrieve_function(element["func"], element.get("module"))
             X = func(X, **element.get("config", {}))
         return X
 
@@ -84,12 +83,16 @@ class DataPreparation():
     def __init__(self, input_path: str, output_path: str, input_type: str = 'csv', input_delimiter: str = ';', pipeline: dict = {}):
         try:
             logger.info("Initializing DataPreparation")
-            self.data = read_data(
-                file_path=input_path,
-                file_type=input_type,
-                separator=input_delimiter,
-            )
-            self.filename = Path(input_path).stem
+            if not input_path:
+                logger.error("Please provide an input path.")
+            else:
+                self.data = read_data(
+                    file_path=input_path,
+                    file_type=input_type,
+                    separator=input_delimiter,
+                    )
+                self.filename = Path(input_path).stem
+
             if not output_path:
                 self.output_path = Path(__file__).parent.parent.parent / "results"
                 logger.info(f"No output path specified.\nUsing default output path:{self.output_path}")
@@ -100,8 +103,9 @@ class DataPreparation():
             if pipeline is None:
                 logger.info("Please provide a pipeline configuration.")
             else:
-                logger.info(f"Using pipeline:\n{pprint_dynaconf(pipeline)}")
+                logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
                 self.pipeline_cfg = pipeline
+
         except Exception as e:
             self.cancel(cls=__class__, reason=f"Error in __init__: {e}")
 
@@ -128,7 +132,7 @@ class DataPreparation():
     def write_data(self):
         try:
             path = f"{self.output_path}/{self.filename}_processed.csv"
-            helpers.write_data(data=self.processed_data, output_path=path)
+            write_data(data=self.processed_data, output_path=path)
         except Exception as e:
             logger.error(f"Error in write_data: {e}")
 
