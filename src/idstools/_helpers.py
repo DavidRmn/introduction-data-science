@@ -3,8 +3,8 @@ import logging
 import logging.config
 import pandas as pd
 from pathlib import Path
+from datetime import datetime
 from idstools._config import _logging
-from importlib.resources import files
 
 def setup_logging(module_name) -> logging.Logger:
     """
@@ -15,9 +15,11 @@ def setup_logging(module_name) -> logging.Logger:
     Returns:
         logger (logging.Logger): The logger object for the module.
     """
-
-    logfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / 'idstools.log'
+    logfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / "idstools.log"
     _logging.default.handlers.file_handler.filename = str(logfile_path)
+
+    resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / f"analysis_results.log"
+    _logging.default.handlers.resultfile_handler.filename = str(resultfile_path)
     
     logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -27,6 +29,7 @@ def setup_logging(module_name) -> logging.Logger:
     return logger
 
 logger = setup_logging(__name__)
+result_logger = setup_logging('results')
 
 def emergency_logger(func):
     """
@@ -45,6 +48,20 @@ def emergency_logger(func):
             logger.error(f"Emergency in '{func.__name__}': {e}", exc_info=True)
             raise
     return wrapper
+
+def log_results(func):
+    @functools.wraps(func)
+    def wrapper_log_results(self, *args, **kwargs):
+        try:
+            result = func(self, *args, **kwargs)
+            result_logger.info(f"Results for {self.filename}:\n")
+            if hasattr(self, 'analysis_results'):
+                for key, value in self.analysis_results.items():
+                    result_logger.info(f"{key}:\n{value}")
+            return result
+        except Exception as e:
+            logger.error(f"Error in {func.__name__}: {e}", exc_info=True)
+    return wrapper_log_results
 
 @emergency_logger
 def resolve_path(path: str | Path) -> Path:

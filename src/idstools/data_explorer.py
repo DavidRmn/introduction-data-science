@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from datetime import datetime
 from idstools._config import pprint_dynaconf
-from idstools._helpers import emergency_logger, setup_logging, resolve_path, read_data
+from idstools._helpers import emergency_logger, log_results, setup_logging, resolve_path, read_data
 
 pd.set_option('display.precision', 2)
 logger = setup_logging(__name__)
@@ -17,8 +17,6 @@ class DataExplorer():
     def __init__(self, input_path: str, input_delimiter: str = None, output_path: str = None, label: str = None, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
-            
-            self.analysis_results = {}
 
             if not label:
                 logger.info(f"No label provided.")
@@ -58,6 +56,29 @@ class DataExplorer():
 
         except Exception as e:
             self.cancel(cls=__class__, reason=f"Error in __init__: {e}")
+
+    @log_results
+    def descriptive_analysis(self):
+        """
+        Generates descriptive statistics for the dataset.
+        """
+        try:
+            self.head = self.data.head().T
+            self.analysis_results["HEAD"] = self.head
+
+            buffer = io.StringIO()
+            self.data.info(buf=buffer)
+            info_str = buffer.getvalue()
+            buffer.close()
+            self.analysis_results["INFO"] = info_str
+            
+            self.dtypes = self.data.dtypes
+            self.analysis_results["DTYPES"] = self.types
+            
+            self.describe = self.data.describe().T
+            self.analysis_results["DESCRIBE"] = self.description
+        except Exception as e:
+            logger.error(f"Error in descriptive_analysis: {e}")
 
     def generate_plot(self, lambda_func, plotname: str = None):
         """
@@ -103,24 +124,6 @@ class DataExplorer():
             plt.close(fig)
         except Exception as e:
             logger.error(f"Error in generate_subplot: {e}")
-
-    def descriptive_analysis(self):
-        """
-        Generates descriptive statistics for the dataset.
-        """
-        try:
-            self.head = self.data.head().T
-
-            buffer = io.StringIO()
-            self.data.info(buf=buffer)
-            info_str = buffer.getvalue()
-            buffer.close()
-            
-            self.types = self.data.dtypes
-            
-            self.description = self.data.describe().T
-        except Exception as e:
-            logger.error(f"Error in descriptive_analysis: {e}")
 
     def missing_value_analysis(self):
         """
@@ -223,6 +226,7 @@ class DataExplorer():
         """
         try:
             if self.data is not None:
+                self.analysis_results = {}
                 for explorer in self.pipeline:
                     if explorer:
                         method = getattr(self, explorer)
