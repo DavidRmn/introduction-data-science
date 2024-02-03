@@ -9,6 +9,9 @@ __pycache__/
 # png
 *.png
 
+# results
+results/
+
 # log
 *.log
 

@@ -68,7 +68,7 @@ custom:
     DataExplorer:
       output_path: # Output path for saving the results. If Null, results are not saved to a file.
       input_path: data/BikeRentalDaily_train.csv  # Path to the dataset file.
-      input_delimiter: ;  # Character used to separate values in the CSV file.
+      input_delimiter: ; # Character used to separate values in the CSV file.
       label: cnt  # Target column for analysis.
 
       # Pipeline for performing data exploration tasks.
@@ -102,6 +102,11 @@ custom:
             module: idstools._custom_transformer  # Module containing the function.
             config:
               target: dteday  # Target column for transformation.
+        _OneHotEncoder: 
+          - target: mnth  # Column for one-hot encoding.
+            config:
+              prefix: month  # Prefix for new dummy columns.
+              dtype: int  # Data type for the new columns.
 
 
   # Model Optimization Module Configuration

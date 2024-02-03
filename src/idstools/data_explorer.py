@@ -68,15 +68,15 @@ class DataExplorer():
 
             buffer = io.StringIO()
             self.data.info(buf=buffer)
-            info_str = buffer.getvalue()
+            self.info = buffer.getvalue()
             buffer.close()
-            self.analysis_results["INFO"] = info_str
+            self.analysis_results["INFO"] = self.info
             
             self.dtypes = self.data.dtypes
-            self.analysis_results["DTYPES"] = self.types
+            self.analysis_results["DTYPES"] = self.dtypes
             
             self.describe = self.data.describe().T
-            self.analysis_results["DESCRIBE"] = self.description
+            self.analysis_results["DESCRIBE"] = self.describe
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
