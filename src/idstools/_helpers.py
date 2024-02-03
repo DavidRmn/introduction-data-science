@@ -4,8 +4,9 @@ import logging.config
 import pandas as pd
 from pathlib import Path
 from idstools._config import _logging
+from importlib.resources import files
 
-def setup_logging(module_name):
+def setup_logging(module_name) -> logging.Logger:
     """
     This function sets up the logging configuration for the module.
     
@@ -14,10 +15,11 @@ def setup_logging(module_name):
     Returns:
         logger (logging.Logger): The logger object for the module.
     """
-    logfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / 'idstools.log'
-    logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
+    logfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / 'idstools.log'
     _logging.default.handlers.file_handler.filename = str(logfile_path)
+    
+    logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
     logging.config.dictConfig(_logging.default.to_dict())
 
@@ -45,27 +47,61 @@ def emergency_logger(func):
     return wrapper
 
 @emergency_logger
-def read_data(file_path: Path, file_type: str | None, separator: str | None) -> pd.DataFrame | None:
+def resolve_path(path: str | Path) -> Path:
+    """
+    This function resolves a path to a Path object.
+    
+    Args:
+        path (str | Path): The path to resolve.
+    Returns:
+        resolved_path (Path): The resolved path.
+    """
+    try:
+        path = Path(path)
+        if path.is_absolute():
+            return path
+        return Path(__file__).parent.parent.parent / path
+    except Exception as e:
+        logger.error(f"Error in resolve_path: {e}")
+        return None
+
+@emergency_logger
+def read_data(file_path: Path, separator: str | None) -> pd.DataFrame | None:
     """
     This function reads data from a file and returns a DataFrame.
     
     Args:
         file_path (Path): The path to the file to read.
-        file_type (str): The type of file to read.
-        separator (str): The separator for the file.
-        data (pd.DataFrame): The data from the file.
+        separator (str | None): The separator for the file. If None, the default separator for the file type will be used.
     """
     try:
-        if file_type in ['csv']:
-            logger.info(f"Reading {file_type} file:\n{file_path}")
-            data = pd.read_csv(
-                file_path,
-                sep=separator
-                )
+        extension_methods = {
+            '.csv': 'read_csv',
+            '.json': 'read_json',
+            '.parquet': 'read_parquet',
+            '.pickle': 'read_pickle',
+            '.xls': 'read_excel',
+            '.xlsx': 'read_excel'
+        }
+        file_type = file_path.suffix.lower()
+        method = extension_methods.get(file_type, None)
+        if method:
+            logger.info(f"Reading data from:\n{file_path.resolve()}")
+            if separator:
+                data = getattr(pd, method)(file_path, sep=separator)
+            else:
+                data = getattr(pd, method)(file_path)
             return data
+    except AttributeError as e:
+        logger.error(f"File type '{file_type}' is not supported: {e}")
+        return None
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        return None
     except Exception as e:
         logger.error(f"Error in read_data: {e}")
-
+        return None
+    
 @emergency_logger
 def write_data(data: pd.DataFrame, output_path: Path):
     """
@@ -75,15 +111,12 @@ def write_data(data: pd.DataFrame, output_path: Path):
         data (pd.DataFrame): The data to write to the file.
         output_path (Path): The path to the file to write the data to.
     """
-    try:
-        logger.info(f"Writing data to:\n{output_path}")
-        output_path.parent.mkdir(
-            parents=True,
-            exist_ok=True
-            )
-        data.to_csv(
-            output_path,
-            index=False
-            )
-    except Exception as e:
-        logger.error(f"Error in write_data: {e}")
+    logger.info(f"Writing data to:\n{output_path}")
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+        )
+    data.to_csv(
+        output_path,
+        index=False
+        )

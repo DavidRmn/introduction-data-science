@@ -40,8 +40,8 @@ default:
       propagate: False
     tqdm:
       level: INFO
-      handlers: [file_handler]
+      handlers: [file_handler, console_handler]
       propagate: False
     root:
       level: INFO
-      handlers: [console_handler, file_handler]
+      handlers: [file_handler]

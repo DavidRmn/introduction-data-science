@@ -5,92 +5,84 @@ default:
   # This section configures the DataExplorer class for initial analysis of the dataset.
   data_explorer:
     DataExplorer:
-      output_path: Null  # Output path for saving the results. If Null, results are not saved to a file.
-      input_path:   # Path to the dataset file.
-      input_type:   # Type of the dataset file. Currently, only CSV format is supported.
-      input_delimiter:   # Character used to separate values in the CSV file.
+      output_path: # Output path for saving the results. If Null, results are not saved to a file.
+      input_path: # Path to the dataset file.
+      input_delimiter: # Character used to separate values in the CSV file.
+      label: # Target column for analysis.
 
       # Pipeline for performing data exploration tasks.
       # Various analyses can be enabled or disabled as needed.
       pipeline:
       # Boolean values for enabling or disabling various analyses.
-        descriptive_analysis: False  # Enables analysis of basic descriptive statistics (e.g., mean, median).
-        missing_value_matrix_plot: False  # Enables analysis of missing values in the dataset.
-        missing_value_bar_plot: False  # Enables analysis of missing values in the dataset.
-        correlation_heatmap_plot: False  # Enables analysis of feature correlations.
-        #outliers_analysis: False  # Enables detection and analysis of outliers in the dataset.
+        descriptive_analysis: # Enables analysis of basic descriptive statistics (e.g., mean, median).
+        missing_value_analysis: # Enables analysis of missing values in the dataset.
+        correlation_analysis: # Enables analysis of feature correlations.
+        outlier_analysis: # Enables detection and analysis of outliers in the dataset.
 
   # Data Preparation Module Configuration
   # This section is used to configure the DataPreparation class for preprocessing the dataset.
   data_preparation:
     DataPreparation:
-      output_path:   # Output path for saving preprocessed data. If Null, data is not saved to a file.
-      input_path:   # Path to the dataset file.
-      input_type:   # Type of the dataset file. Currently, only CSV format is supported.
-      input_delimiter:   # Character used to separate values in the CSV file.
+      output_path: # Output path for saving preprocessed data. If Null, data is not saved to a file.
+      input_path: # Path to the dataset file.
+      input_delimiter: # Character used to separate values in the CSV file.
 
       # Pipeline for data preparation steps.
       # Configurations for data imputation, encoding, and feature selection.
       pipeline:
         _SimpleImputer: 
-          - target:   # Target column for missing value imputation.
+          - target: # Target column for missing value imputation.
             config:
-              strategy:   # Imputation strategy, e.g., using the mean value.
+              strategy: # Imputation strategy, e.g., using the mean value.
 
         _OneHotEncoder: 
-          - target:   # Column for one-hot encoding.
+          - target: # Column for one-hot encoding.
             config:
-              prefix:   # Prefix for new dummy columns.
-              dtype:   # Data type for the new columns.
-          - target: 
-            config:
-              prefix: 
-              dtype: 
+              prefix: # Prefix for new dummy columns.
+              dtype: # Data type for the new columns.
 
         _FeatureDropper: 
-          - target:   # Column to be removed.
+          - target: # Column to be removed.
             config:
-              axis:   # Axis to drop (1 for columns).
-              errors:   # How to handle errors during dropping.
+              axis: # Axis to drop (1 for columns).
+              errors: # How to handle errors during dropping.
 
   # Model Optimization Module Configuration
   # This section configures the ModelOptimization class for tuning and evaluating models.
   model_optimization:
     ModelOptimization:
-      output_path:   # Path for saving optimization results. If Null, results are not saved.
+      output_path: # Path for saving optimization results. If Null, results are not saved.
 
       # Evaluation settings for the model optimization process.
       # Defines the metric and method used for evaluating model performance.
       evaluation:
-        metric:   # Metric for model evaluation, e.g., Root Mean Squared Error.
-        cv:   # Number of folds for cross-validation.
+        metric: # Metric for model evaluation, e.g., Root Mean Squared Error.
+        cv: # Number of folds for cross-validation.
 
 custom:
   # Data Explorer Module Configuration
   # This section configures the DataExplorer class for initial analysis of the dataset.
   data_explorer:
     DataExplorer:
-      output_path:   # Output path for saving the results. If Null, results are not saved to a file.
+      output_path: # Output path for saving the results. If Null, results are not saved to a file.
       input_path: data/BikeRentalDaily_train.csv  # Path to the dataset file.
-      input_type: csv  # Type of the dataset file. Currently, only CSV format is supported.
       input_delimiter: ;  # Character used to separate values in the CSV file.
+      label: cnt  # Target column for analysis.
 
       # Pipeline for performing data exploration tasks.
       # Various analyses can be enabled or disabled as needed.
       pipeline:
         descriptive_analysis: True  # Enables analysis of basic descriptive statistics (e.g., mean, median).
-        missing_value_matrix_plot: True  # Enables analysis of missing values in the dataset.
-        missing_value_bar_plot: True  # Enables analysis of missing values in the dataset.
-        correlation_heatmap_plot: True  # Enables analysis of feature correlations.
-        #outliers_analysis: True  # Enables detection and analysis of outliers in the dataset.
+        missing_value_analysis: True  # Enables analysis of missing values in the dataset.
+        correlation_analysis: True  # Enables analysis of feature correlations.
+        outlier_analysis: True  # Enables detection and analysis of outliers in the dataset.
 
   # Data Preparation Module Configuration
   # This section is used to configure the DataPreparation class for preprocessing the dataset.
   data_preparation:
     DataPreparation:
-      output_path: Null  # Output path for saving preprocessed data. If Null, data is not saved to a file.
+      output_path: # Output path for saving preprocessed data. If Null, data is not saved to a file.
       input_path: data/BikeRentalDaily_test.csv  # Path to the dataset file.
-      input_type: csv  # Type of the dataset file. Currently, only CSV format is supported.
       input_delimiter: ;  # Character used to separate values in the CSV file.
 
       # Pipeline for data preparation steps.
@@ -112,7 +104,7 @@ custom:
   # This section configures the ModelOptimization class for tuning and evaluating models.
   model_optimization:
     ModelOptimization:
-      output_path: results  # Path for saving optimization results. If Null, results are not saved.
+      output_path: # Path for saving optimization results. If Null, results are not saved.
 
       # Evaluation settings for the model optimization process.
       # Defines the metric and method used for evaluating model performance.

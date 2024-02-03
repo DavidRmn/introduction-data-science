@@ -11,7 +11,7 @@ class Wrapper:
 
     def __instantiate_modules(self):
         environments = {}
-        logger.debug("Instantiating environments from configuration.")
+        logger.info("Instantiating environments from configuration.")
         for env_name, config in _idstools.to_dict().items():
             logger.debug(f"Processing environment: {env_name}")
             module_classes = {}
@@ -23,7 +23,7 @@ class Wrapper:
                 except Exception as e:
                     logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
             environments[env_name] = module_classes
-        logger.info("Completed instantiation of environments.")
+        logger.info(f"Completed instantiation of environments: {list(environments.keys())}")
         return environments
 
     def run(self):
@@ -31,7 +31,10 @@ class Wrapper:
         for env_name, modules in tqdm(self.environments.items(), desc="Environments"):
             logger.info(f"Executing environment: {env_name}")
             for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {env_name}"):
-                self.initialize_and_run_module(module_name, class_name, class_config)
+                try:
+                    self.initialize_and_run_module(module_name, class_name, class_config)
+                except Exception as e:
+                    logger.error(f"Error executing module {module_name} in environment {env_name}: {e}")
         logger.info("Finished execution of all environments.")
 
     def initialize_and_run_module(self, module_name, class_name, class_config):
