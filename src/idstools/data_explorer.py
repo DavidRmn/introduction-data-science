@@ -4,7 +4,6 @@ import seaborn as sns
 import missingno as msno
 import matplotlib.pyplot as plt
 from tqdm import tqdm
-from datetime import datetime
 from idstools._config import pprint_dynaconf
 from idstools._helpers import emergency_logger, log_results, setup_logging, resolve_path, read_data
 

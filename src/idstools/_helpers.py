@@ -3,7 +3,6 @@ import logging
 import logging.config
 import pandas as pd
 from pathlib import Path
-from datetime import datetime
 from idstools._config import _logging
 
 def setup_logging(module_name) -> logging.Logger:
