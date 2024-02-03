@@ -4,6 +4,7 @@ import seaborn as sns
 import missingno as msno
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from datetime import datetime
 from idstools._config import pprint_dynaconf
 from idstools._helpers import emergency_logger, setup_logging, resolve_path, read_data
 
@@ -67,79 +68,154 @@ class DataExplorer():
                             function should expect a DataFrame and an ax as arguments.
             filename (str): Filename to save the combined plot.
         """
-        fig = plt.figure(figsize=(16, 9))
-        lambda_func(self.data)
-        plt.savefig(self.output_path / f"{self.filename}_{plotname}")
-        plt.close(fig)
+        try:
+            fig = plt.figure(figsize=(16, 9))
+            lambda_func(self.data)
+            plt.savefig(self.output_path / f"{self.filename}_{plotname}")
+            plt.close(fig)
+        except Exception as e:
+            logger.error(f"Error in generate_plot: {e}")
 
     def generate_subplot(self, lambdas, plotname: str = None):
         """
         Generates plots for the data using seaborn plotting functions.
 
         Args:
-            lambdas (list): List of lambda functions to generate plots, where each lambda
-                            function should expect a DataFrame and an ax as arguments.
+            lambdas (list): List of tuples containing lambda functions to generate plots and plot parameters.
             filename (str): Filename to save the combined plot.
         """
-        num_plots = len(lambdas)
-        fig, axes = plt.subplots(num_plots, 1, figsize=(16, 9 * num_plots))
+        try:
+            num_plots = len(lambdas)
+            fig, subplots = plt.subplots(num_plots, 1, figsize=(16, 9 * num_plots))
 
-        if num_plots == 1:
-            axes = [axes]
+            if num_plots == 1:
+                subplots = [subplots]
 
-        for ax, lambda_func in zip(axes, lambdas):
-            lambda_func(self.data, ax)
+            for ax, (lambda_func, kwargs) in zip(subplots, lambdas):
+                lambda_func(self.data, ax)
+                ax.set_title(kwargs.get("title", ""))
+                ax.set_ylabel(kwargs.get("ylabel", ""))
+                ax.set_xlabel(kwargs.get("xlabel", ""))
+                ax.fontsize = 12
 
-        plt.tight_layout()
-        plt.savefig(self.output_path / f"{self.filename}_{plotname}")
-        plt.close(fig)
+            plt.tight_layout()
+            plt.savefig(self.output_path / f"{self.filename}_{plotname}")
+            plt.close(fig)
+        except Exception as e:
+            logger.error(f"Error in generate_subplot: {e}")
 
     def descriptive_analysis(self):
         """
         Generates descriptive statistics for the dataset.
         """
-        self.head = self.data.head().T
+        try:
+            self.head = self.data.head().T
 
-        buffer = io.StringIO()
-        self.data.info(buf=buffer)
-        info_str = buffer.getvalue()
-        buffer.close()
-        
-        self.types = self.data.dtypes
-        
-        self.description = self.data.describe().T
+            buffer = io.StringIO()
+            self.data.info(buf=buffer)
+            info_str = buffer.getvalue()
+            buffer.close()
+            
+            self.types = self.data.dtypes
+            
+            self.description = self.data.describe().T
+        except Exception as e:
+            logger.error(f"Error in descriptive_analysis: {e}")
 
     def missing_value_analysis(self):
         """
         Generates plots for missing value analysis.
         """
-        self.generate_plot(
-            lambda_func=lambda x: msno.bar(x),
-            plotname="missing_value_bar.png"
-            )
-        self.generate_plot(
-            lambda_func=lambda x: msno.matrix(x),
-            plotname="missing_value_matrix.png"
-            )
+        try:
+            self.generate_plot(
+                lambda_func=lambda x: msno.bar(x).set_title("Missing Value Barplot"),
+                plotname="missing_value_bar.png"
+                )
+            self.generate_plot(
+                lambda_func=lambda x: msno.matrix(x).set_title("Missing Value Matrix"),
+                plotname="missing_value_matrix.png"
+                )
+        except Exception as e:
+            logger.error(f"Error in missing_value_analysis: {e}")
                     
     def correlation_analysis(self):
         """
         Generates a heatmap of the correlation matrix.
         """
-        self.generate_plot(
-            lambda_func=lambda x: sns.heatmap(x.corr(numeric_only=True), annot=True, cmap="coolwarm", fmt=".2f"),
-            plotname="correlation_heatmap.png"
-            )
+        try:
+            self.generate_plot(
+                lambda_func=lambda x: sns.heatmap(
+                    x.corr(numeric_only=True),
+                    annot=True, cmap="coolwarm",
+                    fmt=".2f"
+                    ).set_title("Correlation Heatmap"),
+                plotname="correlation_heatmap.png"
+                )
+        except Exception as e:
+            logger.error(f"Error in correlation_analysis: {e}")
         
     def outlier_analysis(self):
         """
         Generates boxplots for outlier analysis.
         """
-        lambdas = []
-        for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Outlier Barplots"):
-            lambdas.append(lambda x, ax, column=column: sns.boxplot(x=x[column], ax=ax))
-        self.generate_subplot(lambdas, plotname="outlier_boxplots.png")
-            
+        try:
+            lambdas = []
+            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Outlier Barplots"):
+                lambdas.append(
+                    (
+                        lambda x, ax, column=column: sns.boxplot(x=x[column], ax=ax),
+                            {
+                            "title": f"Boxplot of {column}",
+                            "ylabel": column,
+                            "xlabel": "Distribution"
+                            }
+                    )
+                )
+            self.generate_subplot(lambdas, plotname="outlier_boxplots.png")
+        except Exception as e:
+            logger.error(f"Error in outlier_analysis: {e}")
+
+    def distribution_analysis(self):
+        """
+        Generates distribution plots for the dataset.
+        """
+        try:
+            lambdas = []
+            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Distribution Plots"):
+                lambdas.append(
+                    (
+                    lambda x, ax, column=column: sns.histplot(x[column], kde=True, ax=ax),
+                        {
+                        "title":f"Skew: {round(self.data[column].skew(), 2)}",
+                        "ylabel":column,
+                        "xlabel":"Distribution"
+                        }
+                    )
+                )
+            self.generate_subplot(lambdas, plotname="distribution_plots.png")
+        except Exception as e:
+            logger.error(f"Error in distribution_analysis: {e}")
+
+    def scatter_analysis(self):
+        """
+        Generates scatter plots for the dataset.
+        """
+        try:
+            lambdas = []
+            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Scatter Plots"):
+                lambdas.append(
+                    (
+                    lambda x, ax, column=column: sns.scatterplot(x=x[column], y=x[self.label], ax=ax),
+                        {
+                        "title":f"Scatterplot of {column} vs {self.label}",
+                        "ylabel":self.label,
+                        "xlabel":column
+                        }
+                    )
+                )
+            self.generate_subplot(lambdas, plotname="scatter_plots.png")
+        except Exception as e:
+            logger.error(f"Error in scatter_analysis: {e}")
 
     def run(self):
         """

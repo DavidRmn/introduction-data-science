@@ -18,6 +18,8 @@ default:
         missing_value_analysis: # Enables analysis of missing values in the dataset.
         correlation_analysis: # Enables analysis of feature correlations.
         outlier_analysis: # Enables detection and analysis of outliers in the dataset.
+        distribution_analysis: # Enables analysis of feature distributions.
+        scatter_analysis: # Enables scatter plot analysis for feature relationships.
 
   # Data Preparation Module Configuration
   # This section is used to configure the DataPreparation class for preprocessing the dataset.
@@ -76,6 +78,8 @@ custom:
         missing_value_analysis: True  # Enables analysis of missing values in the dataset.
         correlation_analysis: True  # Enables analysis of feature correlations.
         outlier_analysis: True  # Enables detection and analysis of outliers in the dataset.
+        distribution_analysis: True  # Enables analysis of feature distributions.
+        scatter_analysis: True  # Enables scatter plot analysis for feature relationships.
 
   # Data Preparation Module Configuration
   # This section is used to configure the DataPreparation class for preprocessing the dataset.
