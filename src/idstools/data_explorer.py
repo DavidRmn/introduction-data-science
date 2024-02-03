@@ -76,6 +76,9 @@ class DataExplorer():
             
             self.describe = self.data.describe().T
             self.analysis_results["DESCRIBE"] = self.describe
+
+            self.isnull = self.data.isnull().sum()
+            self.analysis_results["ISNULL"] = self.isnull
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
