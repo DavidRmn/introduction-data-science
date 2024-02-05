@@ -138,7 +138,7 @@ class DataPreparation():
                 self.processed_data = self._pipeline.named_steps[transformer].transform(self.processed_data)
                 logger.info(f"Pipeline step {transformer} has been processed.")
             self.target_data.processed_data = self.processed_data
-            result_logger.info(f"ENV:{self.env_name} Processed data:\n{self.processed_data.head()}")
+            result_logger.info(f"ENV:{self.env_name} Processed data:\n{self.processed_data.head().T}")
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 

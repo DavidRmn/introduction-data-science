@@ -91,7 +91,7 @@ class DataExplorer():
             self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr()[self.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[(self.correlation < 1) | (self.correlation > -1)]
-            self.correlation = self.correlation[(self.correlation >= 0.5) | (self.correlation <= -0.5)]
+            self.correlation = self.correlation[(self.correlation >= 0.3) | (self.correlation <= -0.3)]
             result_logger.info(f"ENV:{self.env_name} CORRELATION:\n{self.correlation}")
         except Exception as e:
             logger.error(f"Error in most_correlated_features: {e}")
