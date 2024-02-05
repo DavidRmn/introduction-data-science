@@ -64,6 +64,13 @@ def create_config(config_file: str = None):
     )
     return _idstools
 
+_template = PrettyDynaconf(
+        envvar_prefix='IDSTOOLS',
+        settings_files=[
+            str(config_root / "idstools" / "template.yml"),
+        ]
+    )
+
 _logging = PrettyDynaconf(
     envvar_prefix='LOGGING',
     root_path=str(config_root),
