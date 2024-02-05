@@ -30,6 +30,24 @@ def setup_logging(module_name) -> logging.Logger:
 logger = setup_logging(__name__)
 result_logger = setup_logging('results')
 
+
+def use_decorator(*decorators):
+    """
+    A decorator that applies multiple decorators to a class.
+    
+    Args:
+        *decorators: The decorators to apply to the class.
+    Returns:
+        decorator (function): The decorator function.
+    """
+    def decorator(cls):
+        for decorator_func in decorators:
+            for name, attr in vars(cls).items():
+                if callable(attr):
+                    setattr(cls, name, decorator_func(attr))
+        return cls
+    return decorator
+
 def emergency_logger(func):
     """
     A decorator that logs exceptions at the emergency level.
@@ -50,12 +68,12 @@ def emergency_logger(func):
 
 def log_results(func):
     @functools.wraps(func)
-    def wrapper_log_results(self, *args, **kwargs):
+    def wrapper_log_results(*args, **kwargs):
         try:
-            result = func(self, *args, **kwargs)
-            result_logger.info(f"Results for {self.filename}:\n")
-            if hasattr(self, 'analysis_results'):
-                for key, value in self.analysis_results.items():
+            result = func(*args, **kwargs)
+            if hasattr(func, 'analysis_results'):
+                result_logger.info(f"Results for {func.__name__} in {func.__class__}:\n")
+                for key, value in result['analysis_results'].items():
                     result_logger.info(f"{key}:\n{value}")
             return result
         except Exception as e:

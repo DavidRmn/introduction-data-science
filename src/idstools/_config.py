@@ -41,18 +41,33 @@ class PrettyDynaconf(Dynaconf):
     def _repr_markdown_(self):
         pprint_dynaconf(self, notebook=True)   
 
+def create_config(config_file: str = None):
+    """
+    Initializes and returns a PrettyDynaconf object with specified settings.
+
+    Parameters:
+    - config_root: The root path where the configuration files are located.
+
+    Returns:
+    - A configured PrettyDynaconf object.
+    """
+    if config_file is None:
+        config_file = str(config_root / "idstools" / "config.yml")
+    else:
+        config_file = str(config_file)
+
+    _idstools = PrettyDynaconf(
+        envvar_prefix='IDSTOOLS',
+        settings_files=[
+            config_file,
+        ]
+    )
+    return _idstools
+
 _logging = PrettyDynaconf(
     envvar_prefix='LOGGING',
     root_path=str(config_root),
     settings_files=[
         'logging/config.yml',
-        ]
-)
-
-_idstools = PrettyDynaconf(
-    envvar_prefix='IDSTOOLS',
-    root_path=str(config_root),
-    settings_files=[
-        'idstools/config.yml',
         ]
 )

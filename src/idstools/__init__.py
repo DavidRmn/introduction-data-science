@@ -1,6 +1,16 @@
+from argparse import ArgumentParser
 from idstools.wrapper import Wrapper
+from idstools._config import create_config
 
 def main():
     """Entry point for the application script"""
-    w = Wrapper()
+    parser = ArgumentParser(description="IDSTools: A collection of tools for data science.")
+    parser.add_argument(
+        "--config",
+        help="Path to the configuration file.",
+        default="idstools/config.yml"
+    )
+    args = parser.parse_args()
+    config = create_config(args.config)
+    w = Wrapper(config=config)
     w.run()

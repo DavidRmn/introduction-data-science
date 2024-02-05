@@ -4,7 +4,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from idstools._config import pprint_dynaconf
-from idstools._helpers import emergency_logger, setup_logging, resolve_path, read_data, write_data
+from idstools._idstools_data import TargetData
+from idstools._helpers import use_decorator, emergency_logger, log_results, setup_logging, resolve_path, write_data
 
 logger = setup_logging(__name__)
 
@@ -76,82 +77,91 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
             X = func(X, **element.get("config", {}))
         return X
 
-@emergency_logger
+@use_decorator(emergency_logger, log_results)
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
-    def __init__(self, input_path: str, input_delimiter: str = None, output_path: str = None, pipeline: dict = None):
+    def __init__(self, target_data: object = None ,input_path: str = None, input_delimiter: str = None, env_name: str = None, pipeline: dict = None, output_path: str = None):
         try:
             logger.info("Initializing DataPreparation")
 
-            if not output_path:
-                self.output_path = resolve_path("results")
-                logger.info(f"Output path not provided.\nUsing default path: {self.output_path}")
+            self.processed_data = None
+
+            if target_data is None:
+                self.target_data = TargetData(input_path=input_path, input_delimiter=input_delimiter, output_path=output_path, env_name=env_name)
+                logger.info(f"Data loaded from {self.target_data.input_path}.")
             else:
-                self.output_path = resolve_path(output_path)
-                logger.info(f"Using output path: {self.output_path}")
+                self.target_data = target_data
+                logger.info(f"Data loaded from {self.target_data.input_path}.")
+
+            self.data = self.target_data.data
+            self.label = self.target_data.label
+            self.filename = self.target_data.filename
+            self.output_path = self.target_data.output_path
+            self.env_name = self.target_data.env_name
 
             if not pipeline:
-                self.transformer = {}
+                self.pipeline = {}
                 logger.info(f"Please provide a pipeline configuration.")
             else:
-                self.transformer = pipeline
+                self.pipeline = pipeline
                 logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
-
-            if not input_path:
-                logger.error("Please provide an input path.")
-                self.data = None
-                return
-            else:
-                self.input_path = resolve_path(input_path)
-                self.data = read_data(
-                    file_path=self.input_path,
-                    separator=input_delimiter
-                    )
-                self.filename = self.input_path.stem
             
-            if self.data is None:
-                logger.error(f"Could not read data from {self.input_path}")
-                return
+            self.check_data()
 
         except Exception as e:
-            self.cancel(cls=__class__, reason=f"Error in __init__: {e}")
+            self.cancel(reason=f"Error in __init__: {e}")
 
-    def build_pipeline(self, config: dict):
+    def check_data(self):
+        """Check if data is available."""
         try:
-            self.pipeline = Pipeline(steps=[(transformer, None) for transformer in config])
-            for transformer in config:
-                self.pipeline.set_params(**{transformer: eval(transformer)(config=config[transformer])})
+            if self.target_data.processed_data:
+                self.data = self.target_data.processed_data
+                logger.info(f"Processed data loaded from {self.target_data.input_path}.")
+        except Exception as e:
+            self.cancel(reason=f"Error in check_data: {e}")
+
+    def build_pipeline(self, pipeline: dict):
+        try:
+            analysis_results = {}
+            self._pipeline = Pipeline(steps=[(transformer, None) for transformer in pipeline])
+            for transformer in pipeline:
+                self._pipeline.set_params(**{transformer: eval(transformer)(config=pipeline[transformer])})
             logger.info(f"Pipeline created.")
-            return self.pipeline
+            analysis_results['PIPELINE'] = self._pipeline
+            return analysis_results
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
 
-    def run_pipeline(self, config: dict):
+    def run_pipeline(self, pipeline: dict):
         try:
+            analysis_results = {}
             self.processed_data = self.data.copy()        
-            for transformer in config:
-                self.processed_data = self.pipeline.named_steps[transformer].transform(self.processed_data)
+            for transformer in pipeline:
+                self.processed_data = self._pipeline.named_steps[transformer].transform(self.processed_data)
                 logger.info(f"Pipeline step {transformer} has been processed.")
-            return self.processed_data
+            analysis_results['PROCESSED_DATA_HEAD'] = self.processed_data.head().T
+            self.target_data.processed_data = self.processed_data
+            return analysis_results
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 
     def write_data(self):
         try:
-            path = self.output_path / f"{self.filename}_processed.csv"
+            path = self.output_path / f"{self.env_name}_{self.filename}_processed.csv"
             write_data(data=self.processed_data, output_path=path)
+            logger.info(f"Processed data written to {path}.")
         except Exception as e:
             logger.error(f"Error in write_data: {e}")
 
     def run(self):
         try:
-            if self.data is not None:
-                _ = self.build_pipeline(config=self.transformer)
-                _ = self.run_pipeline(config=self.transformer)
-                self.write_data()
+            self.check_data()
+            self.build_pipeline(pipeline=self.pipeline)
+            self.run_pipeline(pipeline=self.pipeline)
+            self.write_data()
         except Exception as e:
-            self.cancel(cls=__class__, reason=f"Error in run: {e}")
+            self.cancel(reason=f"Error in run: {e}")
 
-    def cancel(self, cls, reason):
-        logger.info(f"Cancel {cls} of data_preparation due to {reason}")
+    def cancel(self, reason):
+        logger.info(f"Cancel of data_preparation due to {reason}")
         exit(1)

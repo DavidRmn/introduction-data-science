@@ -1,0 +1,39 @@
+default:
+first_exploration:
+  _idstools_data:
+    TargetData:
+      input_path: data/BikeRentalDaily_train.csv
+      input_delimiter: ;
+      output_path:
+      label: cnt
+
+  data_explorer:
+    DataExplorer:
+      pipeline:
+        descriptive_analysis: True
+        correlation_analysis: True
+
+second_exploration:
+  _idstools_data:
+    TargetData:
+      input_path: data/BikeRentalDaily_train.csv
+      input_delimiter: ;
+      output_path:
+      label: cnt
+
+  data_preparation:
+    DataPreparation:
+      pipeline:
+        _CustomTransformer:
+          - func: target_to_datetime
+            module: idstools._custom_transformer
+            config:
+              target: dteday
+              format: "%d.%m.%Y"
+  
+  data_explorer:
+    DataExplorer:
+      pipeline:
+        descriptive_analysis: True
+        correlation_analysis: True
+        time_series_analysis: True

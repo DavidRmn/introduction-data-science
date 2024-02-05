@@ -5,10 +5,11 @@ default:
   # This section configures the DataExplorer class for initial analysis of the dataset.
   data_explorer:
     DataExplorer:
-      output_path: # Output path for saving the results. If Null, results are not saved to a file.
-      input_path: # Path to the dataset file.
-      input_delimiter: # Character used to separate values in the CSV file.
-      label: # Target column for analysis.
+      label: # Target variable for analysis.
+      target_data: # _idstools_data object containing the dataset.
+      input_path: # Path to the input data file.
+      input_delimiter: # Delimiter used in the input file.
+      output_path: # Output path for saving the results. If Null, results are not saved to a file.      
 
       # Pipeline for performing data exploration tasks.
       # Various analyses can be enabled or disabled as needed.
@@ -25,9 +26,10 @@ default:
   # This section is used to configure the DataPreparation class for preprocessing the dataset.
   data_preparation:
     DataPreparation:
+      target_data: # _idstools_data object containing the dataset.
+      input_path: # Path to the input data file.
+      input_delimiter: # Delimiter used in the input file.
       output_path: # Output path for saving preprocessed data. If Null, data is not saved to a file.
-      input_path: # Path to the dataset file.
-      input_delimiter: # Character used to separate values in the CSV file.
 
       # Pipeline for data preparation steps.
       # Configurations for data imputation, encoding, and feature selection.
@@ -49,10 +51,17 @@ default:
               axis: # Axis to drop (1 for columns).
               errors: # How to handle errors during dropping.
 
+        _CustomTransformer:
+          - func:   # Function to apply to the target column.
+            module:  # Module containing the function.
+            config:
+              target:  # Target column for transformation.
+
   # Model Optimization Module Configuration
   # This section configures the ModelOptimization class for tuning and evaluating models.
   model_optimization:
     ModelOptimization:
+      target_data: # _idstools_data object containing the dataset.
       output_path: # Path for saving optimization results. If Null, results are not saved.
 
       # Evaluation settings for the model optimization process.
@@ -60,63 +69,3 @@ default:
       evaluation:
         metric: # Metric for model evaluation, e.g., Root Mean Squared Error.
         cv: # Number of folds for cross-validation.
-
-custom:
-  # Data Explorer Module Configuration
-  # This section configures the DataExplorer class for initial analysis of the dataset.
-  data_explorer:
-    DataExplorer:
-      output_path: # Output path for saving the results. If Null, results are not saved to a file.
-      input_path: data/BikeRentalDaily_train.csv  # Path to the dataset file.
-      input_delimiter: ; # Character used to separate values in the CSV file.
-      label: cnt  # Target column for analysis.
-
-      # Pipeline for performing data exploration tasks.
-      # Various analyses can be enabled or disabled as needed.
-      pipeline:
-        descriptive_analysis: True  # Enables analysis of basic descriptive statistics (e.g., mean, median).
-        missing_value_analysis: True  # Enables analysis of missing values in the dataset.
-        correlation_analysis: True  # Enables analysis of feature correlations.
-        outlier_analysis: True  # Enables detection and analysis of outliers in the dataset.
-        distribution_analysis: True  # Enables analysis of feature distributions.
-        scatter_analysis: True  # Enables scatter plot analysis for feature relationships.
-
-  # Data Preparation Module Configuration
-  # This section is used to configure the DataPreparation class for preprocessing the dataset.
-  data_preparation:
-    DataPreparation:
-      output_path: # Output path for saving preprocessed data. If Null, data is not saved to a file.
-      input_path: data/BikeRentalDaily_test.csv  # Path to the dataset file.
-      input_delimiter: ;  # Character used to separate values in the CSV file.
-
-      # Pipeline for data preparation steps.
-      # Configurations for data imputation, encoding, and feature selection.
-      pipeline:
-        _FeatureDropper: 
-          - target: instant  # Column to be removed.
-            config:
-              axis: 1  # Axis to drop (1 for columns).
-              errors: ignore  # How to handle errors during dropping.
-        _CustomTransformer:
-          - func: replace_dot_with_hyphen  # Function to apply to the target column.
-            module: idstools._custom_transformer  # Module containing the function.
-            config:
-              target: dteday  # Target column for transformation.
-        _OneHotEncoder: 
-          - target: mnth  # Column for one-hot encoding.
-            config:
-              prefix: month  # Prefix for new dummy columns.
-              dtype: int  # Data type for the new columns.
-
-
-  # Model Optimization Module Configuration
-  # This section configures the ModelOptimization class for tuning and evaluating models.
-  model_optimization:
-    ModelOptimization:
-      output_path: # Path for saving optimization results. If Null, results are not saved.
-
-      # Evaluation settings for the model optimization process.
-      # Defines the metric and method used for evaluating model performance.
-      evaluation:
-        metric: mse  # Metric for model evaluation, e.g., Root Mean Squared Error.
-        cv: 10  # Number of folds for cross-validation.test:
