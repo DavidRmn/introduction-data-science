@@ -1,16 +1,29 @@
 # Configuration file for the IDSTools package.
 # This file contains settings for various modules like data exploration, data preparation, and model optimization.
 default:
+  # TargetData Configuration
+  _idstools_data:
+    TargetData:
+      input_path: data/BikeRentalDaily_train.csv
+      input_delimiter: ;
+      output_path:
+      label: cnt
+      index: instant
+
   # Data Explorer Module Configuration
   # This section configures the DataExplorer class for initial analysis of the dataset.
   data_explorer:
     DataExplorer:
-      label: # Target variable for analysis.
       target_data: # _idstools_data object containing the dataset.
+
+      # or
+
+      label: # Target variable for analysis.
+      index: # Index column for the dataset.
       input_path: # Path to the input data file.
       input_delimiter: # Delimiter used in the input file.
-      output_path: # Output path for saving the results. If Null, results are not saved to a file.      
 
+      output_path: # Output path for saving the results. If Null, results are not saved to a file.      
       # Pipeline for performing data exploration tasks.
       # Various analyses can be enabled or disabled as needed.
       pipeline:
@@ -27,10 +40,13 @@ default:
   data_preparation:
     DataPreparation:
       target_data: # _idstools_data object containing the dataset.
+
+      # or 
+
       input_path: # Path to the input data file.
       input_delimiter: # Delimiter used in the input file.
-      output_path: # Output path for saving preprocessed data. If Null, data is not saved to a file.
 
+      output_path: # Output path for saving preprocessed data. If Null, data is not saved to a file.
       # Pipeline for data preparation steps.
       # Configurations for data imputation, encoding, and feature selection.
       pipeline:
@@ -62,6 +78,12 @@ default:
   model_optimization:
     ModelOptimization:
       target_data: # _idstools_data object containing the dataset.
+
+      # or
+
+      input_path: # Path to the input data file.
+      input_delimiter: # Delimiter used in the input file.
+      
       output_path: # Path for saving optimization results. If Null, results are not saved.
 
       # Evaluation settings for the model optimization process.

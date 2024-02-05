@@ -6,6 +6,7 @@ first_exploration:
       input_delimiter: ;
       output_path:
       label: cnt
+      index: instant
 
   data_explorer:
     DataExplorer:
@@ -20,6 +21,7 @@ second_exploration:
       input_delimiter: ;
       output_path:
       label: cnt
+      index: instant
 
   data_preparation:
     DataPreparation:

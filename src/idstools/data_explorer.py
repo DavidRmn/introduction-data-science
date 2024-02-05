@@ -14,7 +14,7 @@ logger = setup_logging(__name__)
 @use_decorator(emergency_logger)
 class DataExplorer():
     """This class is used to explore the data."""
-    def __init__(self, target_data: object = None ,input_path: str = None, input_delimiter: str = None, output_path: str = None, env_name: str = None, label: str = None, pipeline: dict = None):
+    def __init__(self, target_data: object = None ,input_path: str = None, input_delimiter: str = None, index: str = None, output_path: str = None, env_name: str = None, label: str = None, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
 
@@ -23,13 +23,14 @@ class DataExplorer():
             self.target_data = None
 
             if target_data is None:
-                target_data = TargetData(input_path=input_path, input_delimiter=input_delimiter, label=label, output_path=output_path, env_name=env_name)
+                target_data = TargetData(input_path=input_path, input_delimiter=input_delimiter, label=label, index=index, output_path=output_path, env_name=env_name)
             
             self.target_data = target_data
             logger.info(f"Data loaded from {self.target_data.input_path}")
 
             self.data = self.target_data.data
             self.label = self.target_data.label
+            self.index = self.target_data.index
             self.filename = self.target_data.filename
             self.output_path = self.target_data.output_path
             self.env_name = self.target_data.env_name
@@ -82,13 +83,13 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
-    def most_correlated_features(self):
+    def most_correlated_features(self, **kwargs):
         """
         Generates a list of the most correlated features.
         """
         try:
             self.check_data()
-            self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr()[self.label].abs()
+            self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr(**kwargs)[self.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[(self.correlation < 1) | (self.correlation > -1)]
             self.correlation = self.correlation[(self.correlation >= 0.3) | (self.correlation <= -0.3)]

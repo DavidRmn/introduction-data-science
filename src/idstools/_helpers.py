@@ -100,7 +100,7 @@ def resolve_path(path: str | Path) -> Path:
         return None
 
 @emergency_logger
-def read_data(file_path: Path, separator: str | None) -> pd.DataFrame | None:
+def read_data(file_path: Path, separator: str | None, index: str | None) -> pd.DataFrame | None:
     """
     This function reads data from a file and returns a DataFrame.
     
@@ -122,9 +122,9 @@ def read_data(file_path: Path, separator: str | None) -> pd.DataFrame | None:
         if method:
             logger.info(f"Reading data from:\n{file_path.resolve()}")
             if separator:
-                data = getattr(pd, method)(file_path, sep=separator)
+                data = getattr(pd, method)(file_path, sep=separator, index_col=index)
             else:
-                data = getattr(pd, method)(file_path)
+                data = getattr(pd, method)(file_path, index_col=index)
             return data
     except AttributeError as e:
         logger.error(f"File type '{file_type}' is not supported: {e}")

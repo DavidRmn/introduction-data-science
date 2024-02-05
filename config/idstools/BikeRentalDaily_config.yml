@@ -1,0 +1,7 @@
+default:
+MYTRANSFORMER:
+  - func: target_to_datetime
+    module: idstools._custom_transformer
+    config:
+      target: dteday
+      format: "%d.%m.%Y"

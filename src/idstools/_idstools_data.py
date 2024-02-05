@@ -6,13 +6,32 @@ logger = setup_logging(__name__)
 @use_decorator(emergency_logger, log_results)
 class TargetData():
     """
-    This class is used to process target data.
+    This class is used to load and share the target data.
+
+    Args:
+        input_path (str): The path to the input data.
+        input_delimiter (str): The delimiter used to separate the data.
+        label (str): The label of the target data.
+        index (str): The index of the target data.
+        output_path (str): The path to the output data.
+        env_name (str): The name of the environment.
+
+    Attributes:
+        data (pandas.DataFrame): The target data.
+        label (str): The label of the target data.
+        filename (str): The name of the file.
+        input_path (str): The path to the input data.
+        processed_data (pandas.DataFrame): The processed data.
+        output_path (str): The path to the output data.
+        env_name (str): The name of the environment.
+        analysis_results (dict): The results of the analysis.    
     """
-    def __init__(self, input_path: str, input_delimiter: str = None, label: str = None, output_path: str = None, env_name: str = None):
+    def __init__(self, input_path: str, input_delimiter: str = None, label: str = None, index: str = None, output_path: str = None, env_name: str = None):
         logger.info("Initializing TargetData object.")
 
         self.data = None
         self.label = None
+        self.index = None
         self.filename = None
         self.input_path = None
         self.processed_data = None
@@ -27,7 +46,8 @@ class TargetData():
             self.input_path = resolve_path(input_path)
             self.data = read_data(
                 file_path=self.input_path,
-                separator=input_delimiter
+                separator=input_delimiter,
+                index=index
                 )
             self.filename = self.input_path.stem
 
@@ -36,6 +56,12 @@ class TargetData():
         else:
             self.label = label
             logger.info(f"Using label: {self.label}")
+        
+        if not index:
+            logger.info(f"No index provided.")
+        else:
+            self.index = index
+            logger.info(f"Using index: {self.index}")
 
         if not output_path:
             self.output_path = resolve_path("results")
