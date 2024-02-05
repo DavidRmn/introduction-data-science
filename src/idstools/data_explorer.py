@@ -6,12 +6,12 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from idstools._config import pprint_dynaconf
 from idstools._idstools_data import TargetData
-from idstools._helpers import use_decorator, emergency_logger, log_results, setup_logging
+from idstools._helpers import use_decorator, emergency_logger, setup_logging, result_logger
 
 pd.set_option('display.precision', 2)
 logger = setup_logging(__name__)
 
-@use_decorator(emergency_logger, log_results)
+@use_decorator(emergency_logger)
 class DataExplorer():
     """This class is used to explore the data."""
     def __init__(self, target_data: object = None ,input_path: str = None, input_delimiter: str = None, output_path: str = None, env_name: str = None, label: str = None, pipeline: dict = None):
@@ -19,6 +19,7 @@ class DataExplorer():
             logger.info("Initializing DataExplorer")
 
             self.figures = {}
+            self.analysis_results = {}
             self.target_data = None
 
             if target_data is None:
@@ -60,25 +61,24 @@ class DataExplorer():
         """
         try:
             self.check_data()
-            analysis_results = {}
             self.head = self.data.head().T
-            analysis_results[f"{self.env_name}_HEAD"] = self.head
+            result_logger.info(f"ENV:{self.env_name} HEAD:\n{self.head}")
 
             buffer = io.StringIO()
             self.data.info(buf=buffer)
             self.info = buffer.getvalue()
             buffer.close()
-            analysis_results[f"{self.env_name}_INFO"] = self.info
+            result_logger.info(f"ENV:{self.env_name} INFO:\n{self.info}")
             
             self.dtypes = self.data.dtypes
-            analysis_results[f"{self.env_name}_DTYPES"] = self.dtypes
+            result_logger.info(f"ENV:{self.env_name} DTYPES:\n{self.dtypes}")
             
             self.describe = self.data.describe().T
-            analysis_results[f"{self.env_name}_DESCRIBE"] = self.describe
+            result_logger.info(f"ENV:{self.env_name} DESCRIBE:\n{self.describe}")
 
             self.isnull = self.data.isnull().sum()
-            analysis_results[f"{self.env_name}_ISNULL"] = self.isnull
-            return analysis_results
+            result_logger.info(f"ENV:{self.env_name} ISNULL:\n{self.isnull}")
+
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
@@ -88,13 +88,11 @@ class DataExplorer():
         """
         try:
             self.check_data()
-            analysis_results = {}
             self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr()[self.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[(self.correlation < 1) | (self.correlation > -1)]
             self.correlation = self.correlation[(self.correlation >= 0.5) | (self.correlation <= -0.5)]
-            analysis_results[f"{self.env_name}_CORRELATION"] = self.correlation
-            return analysis_results
+            result_logger.info(f"ENV:{self.env_name} CORRELATION:\n{self.correlation}")
         except Exception as e:
             logger.error(f"Error in most_correlated_features: {e}")
 

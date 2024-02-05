@@ -39,7 +39,9 @@ dependencies = [
   "seaborn",
   "scikit-learn",
   "dynaconf",
-  "tqdm"
+  "tqdm",
+  "python-box",
+  "ipython"
 ]
 
 [project.urls]
