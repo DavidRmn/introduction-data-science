@@ -71,9 +71,9 @@ def log_results(func):
     def wrapper_log_results(*args, **kwargs):
         try:
             result = func(*args, **kwargs)
-            if hasattr(func, 'analysis_results'):
-                result_logger.info(f"Results for {func.__name__} in {func.__class__}:\n")
-                for key, value in result['analysis_results'].items():
+            if result:
+                result_logger.info(f"Results for {func.__name__} in {args[0].__class__.__name__}:\n")
+                for key, value in result.items():
                     result_logger.info(f"{key}:\n{value}")
             return result
         except Exception as e:

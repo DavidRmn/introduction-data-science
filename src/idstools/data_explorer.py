@@ -62,22 +62,23 @@ class DataExplorer():
             self.check_data()
             analysis_results = {}
             self.head = self.data.head().T
-            analysis_results["HEAD"] = self.head
+            analysis_results[f"{self.env_name}_HEAD"] = self.head
 
             buffer = io.StringIO()
             self.data.info(buf=buffer)
             self.info = buffer.getvalue()
             buffer.close()
-            analysis_results["INFO"] = self.info
+            analysis_results[f"{self.env_name}_INFO"] = self.info
             
             self.dtypes = self.data.dtypes
-            analysis_results["DTYPES"] = self.dtypes
+            analysis_results[f"{self.env_name}_DTYPES"] = self.dtypes
             
             self.describe = self.data.describe().T
-            analysis_results["DESCRIBE"] = self.describe
+            analysis_results[f"{self.env_name}_DESCRIBE"] = self.describe
 
             self.isnull = self.data.isnull().sum()
-            analysis_results["ISNULL"] = self.isnull
+            analysis_results[f"{self.env_name}_ISNULL"] = self.isnull
+            return analysis_results
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
@@ -92,7 +93,8 @@ class DataExplorer():
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[(self.correlation < 1) | (self.correlation > -1)]
             self.correlation = self.correlation[(self.correlation >= 0.5) | (self.correlation <= -0.5)]
-            analysis_results["CORRELATION"] = self.correlation
+            analysis_results[f"{self.env_name}_CORRELATION"] = self.correlation
+            return analysis_results
         except Exception as e:
             logger.error(f"Error in most_correlated_features: {e}")
 

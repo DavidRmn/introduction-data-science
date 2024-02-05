@@ -127,7 +127,7 @@ class DataPreparation():
             for transformer in pipeline:
                 self._pipeline.set_params(**{transformer: eval(transformer)(config=pipeline[transformer])})
             logger.info(f"Pipeline created.")
-            analysis_results['PIPELINE'] = self._pipeline
+            analysis_results[f"{self.env_name}_PIPELINE"] = self._pipeline
             return analysis_results
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
@@ -139,7 +139,7 @@ class DataPreparation():
             for transformer in pipeline:
                 self.processed_data = self._pipeline.named_steps[transformer].transform(self.processed_data)
                 logger.info(f"Pipeline step {transformer} has been processed.")
-            analysis_results['PROCESSED_DATA_HEAD'] = self.processed_data.head().T
+            analysis_results[f"{self.env_name}_PROCESSED_DATA_HEAD"] = self.processed_data.head().T
             self.target_data.processed_data = self.processed_data
             return analysis_results
         except Exception as e:
