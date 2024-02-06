@@ -11,8 +11,9 @@ task1:
   data_preparation:
     DataPreparation:
       pipeline:
-        - func: target_to_datetime
-          module: idstools._custom_transformer
-          config:
-            target: dteday
-            format: "%d.%m.%Y"
+        _CustomTransformer:
+          - func: target_to_datetime
+            module: idstools._custom_transformer
+            config:
+              target: dteday
+              format: "%d.%m.%Y"
