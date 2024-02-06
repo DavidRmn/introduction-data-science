@@ -65,14 +65,14 @@ class TargetData():
 
         if not output_path:
             self.output_path = resolve_path("results")
-            logger.info(f"Output path not provided.\nUsing default path: {self.output_path}")
+            logger.info(f"Output path not provided.\nUsing default output path: {self.output_path}")
         else:
             self.output_path = resolve_path(output_path)
             logger.info(f"Using output path: {self.output_path}")
         
         if not env_name:
-            logger.info(f"No environment name provided. Using default name: 'default'")
-            self.env_name = "default"
+            logger.info(f"No environment name provided.\nUsing default environment name: SELF_EXECUTED")
+            self.env_name = "SELF_EXECUTED"
         else:
             self.env_name = env_name
             logger.info(f"Using environment name: {self.env_name}")

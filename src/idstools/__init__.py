@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from idstools.wrapper import Wrapper
-from idstools._config import create_config
+from idstools._config import load_config
 
 def main():
     """Entry point for the application script"""
@@ -11,6 +11,6 @@ def main():
         default="idstools/config.yml"
     )
     args = parser.parse_args()
-    config = create_config(args.config)
+    config = load_config(args.config)
     w = Wrapper(config=config)
     w.run()

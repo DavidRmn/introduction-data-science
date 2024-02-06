@@ -1,4 +1,5 @@
 import io
+import math
 import pandas as pd
 import seaborn as sns
 import missingno as msno
@@ -59,43 +60,63 @@ class DataExplorer():
     def descriptive_analysis(self):
         """
         Generates descriptive statistics for the dataset.
+
+        Descriptive statistics include the head, info, dtypes, describe, and isnull attributes.
         """
         try:
             self.check_data()
             self.head = self.data.head().T
+            self.analysis_results["head"] = self.head
             result_logger.info(f"ENV:{self.env_name} HEAD:\n{self.head}")
 
             buffer = io.StringIO()
             self.data.info(buf=buffer)
             self.info = buffer.getvalue()
             buffer.close()
+            self.analysis_results["info"] = self.info
             result_logger.info(f"ENV:{self.env_name} INFO:\n{self.info}")
             
             self.dtypes = self.data.dtypes
+            self.analysis_results["dtypes"] = self.dtypes
             result_logger.info(f"ENV:{self.env_name} DTYPES:\n{self.dtypes}")
             
             self.describe = self.data.describe().T
+            self.analysis_results["describe"] = self.describe
             result_logger.info(f"ENV:{self.env_name} DESCRIBE:\n{self.describe}")
 
             self.isnull = self.data.isnull().sum()
+            self.analysis_results["isnull"] = self.isnull
             result_logger.info(f"ENV:{self.env_name} ISNULL:\n{self.isnull}")
 
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
-    def most_correlated_features(self, **kwargs):
+    def calculate_correlation(self, *args, **kwargs):
         """
-        Generates a list of the most correlated features.
+        Calculates the correlation matrix for the dataset.
+
+        Implements the correlation matrix using the pandas DataFrame.corr() method.
+        Performs dtype selection 'select_dtypes(include=['float64', 'int64'])' and 
+        correlation filtering to generate low, moderate, and strong correlation results.
+
+        Args:
+            args: Positional arguments to pass to the pandas DataFrame.corr() method.
+            kwargs: Keyword arguments to pass to the pandas DataFrame.corr() method.
+            e.g. method='pearson', method='spearman' or method='kendall'
         """
         try:
             self.check_data()
-            self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr(**kwargs)[self.label].abs()
+            self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr(*args, **kwargs)[self.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
-            self.correlation = self.correlation[(self.correlation < 1) | (self.correlation > -1)]
-            self.correlation = self.correlation[(self.correlation >= 0.3) | (self.correlation <= -0.3)]
-            result_logger.info(f"ENV:{self.env_name} CORRELATION:\n{self.correlation}")
+            self.correlation = self.correlation[self.correlation <= 1]
+            self.weak_correlation = self.correlation[self.correlation < 0.1]
+            self.moderate_correlation = self.correlation[(self.correlation >= 0.1) & (self.correlation < 0.5)]
+            self.strong_correlation = self.correlation[self.correlation >= 0.5]
+            result_logger.info(f"ENV:{self.env_name} STRONG CORRELATION:{self.strong_correlation}")
+            result_logger.info(f"ENV:{self.env_name} MEDIUM CORRELATION:{self.moderate_correlation}")
+            result_logger.info(f"ENV:{self.env_name} WEAK CORRELATION:\n{self.weak_correlation}")
         except Exception as e:
-            logger.error(f"Error in most_correlated_features: {e}")
+            logger.error(f"Error in calculate_correration: {e}")
 
     def _generate_plot(self, lambda_func, plotname: str = None, save: bool = True):
         """
@@ -116,6 +137,11 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in _generate_plot: {e}")
 
+    def _calculate_grid_size(self, num_plots):
+        cols = math.ceil(math.sqrt(num_plots))
+        rows = math.ceil(num_plots / cols)
+        return rows, cols
+
     def _generate_subplot(self, lambdas, plotname: str = None, save: bool = True):
         """
         Generates plots for the data using seaborn plotting functions.
@@ -127,17 +153,16 @@ class DataExplorer():
         """
         try:
             num_plots = len(lambdas)
-            self.figures[plotname], subplots = plt.subplots(num_plots, 1, figsize=(16, 9 * num_plots))
-
-            if num_plots == 1:
-                subplots = [subplots]
+            rows, cols = self._calculate_grid_size(num_plots)
+            figsize = (cols * 4, rows * 3)
+            self.figures[plotname], subplots = plt.subplots(rows, cols, figsize=figsize)
+            subplots = subplots.flatten() if num_plots > 1 else [subplots]
 
             for ax, (lambda_func, kwargs) in zip(subplots, lambdas):
                 lambda_func(self.data, ax)
-                ax.set_title(kwargs.get("title", ""))
-                ax.set_ylabel(kwargs.get("ylabel", ""))
-                ax.set_xlabel(kwargs.get("xlabel", ""))
-                ax.fontsize = 12
+                ax.set_title(kwargs.get("title", ""), fontsize=10)
+                ax.set_ylabel(kwargs.get("ylabel", ""), fontsize=10)
+                ax.set_xlabel(kwargs.get("xlabel", ""), fontsize=10)
 
             plt.tight_layout()
             if save:
@@ -149,12 +174,18 @@ class DataExplorer():
     def missing_value_analysis(self, *args, **kwargs):
         """
         Generates plots for missing value analysis.
+
+        The missing value analysis includes a barplot and matrix of missing values.
+        For visualization, the missingno library is used to generate the plots.
+        msno.bar() and msno.matrix() are used to generate the barplot and matrix, respectively.
         """
         try:
             self.check_data()
             self._generate_plot(
                 lambda_func=lambda x: msno.bar(x).set_title("Missing Value Barplot"),
-                plotname="missing_value_bar.png"
+                plotname="missing_value_bar",
+                *args,
+                **kwargs
                 )
             self._generate_plot(
                 lambda_func=lambda x: msno.matrix(x).set_title("Missing Value Matrix"),
@@ -167,7 +198,10 @@ class DataExplorer():
                     
     def correlation_analysis(self, *args, **kwargs):
         """
-        Generates a heatmap of the correlation matrix.
+        Generates a heatmap of the correlation matrix for the dataset.
+
+        For visualization, the seaborn library is used to generate the heatmap.
+        sns.heatmap() is used to generate the heatmap.
         """
         try:
             self.check_data()
@@ -187,6 +221,10 @@ class DataExplorer():
     def outlier_analysis(self, *args, **kwargs):
         """
         Generates boxplots for outlier analysis.
+
+        The boxplots are generated for each column of the dataset.
+        For visualization, the seaborn library is used to generate the plots.
+        sns.boxplot() is used to generate the boxplots.
         """
         try:
             self.check_data()
@@ -213,6 +251,10 @@ class DataExplorer():
     def distribution_analysis(self, *args, **kwargs):
         """
         Generates distribution plots for the dataset.
+
+        The distribution plots are generated for each column of the dataset.
+        For visualization, the seaborn library is used to generate the plots.
+        sns.histplot() is used to generate the distribution plots.
         """
         try:
             self.check_data()
@@ -239,6 +281,10 @@ class DataExplorer():
     def scatter_analysis(self, *args, **kwargs):
         """
         Generates scatter plots for the dataset.
+
+        The scatter plots are generated for each column of the dataset.
+        For visualization, the seaborn library is used to generate the plots.
+        sns.scatterplot() is used to generate the scatter plots.
         """
         try:
             self.check_data()
@@ -265,6 +311,10 @@ class DataExplorer():
     def categorical_analysis(self, *args, **kwargs):
         """
         Generates count plots for categorical columns of the dataset.
+
+        The count plots are generated for each column of the dataset.
+        For visualization, the seaborn library is used to generate the plots.
+        sns.countplot() is used to generate the count plots.
         """
         try:
             self.check_data()
@@ -291,6 +341,10 @@ class DataExplorer():
     def time_series_analysis(self, *args, **kwargs):
         """
         Generates time series plots for each column of the dataset.
+
+        The time series plots are generated for each column of the dataset.
+        For visualization, the seaborn library is used to generate the plots.
+        sns.lineplot() is used to generate the time series plots.
         """
         try:
             self.check_data()
@@ -318,6 +372,10 @@ class DataExplorer():
     def over_index_analysis(self, *args, **kwargs):
         """
         Generates plots for over-index analysis.
+
+        The over-index analysis includes line plots for each column of the dataset.
+        For visualization, the seaborn library is used to generate the plots.
+        sns.lineplot() is used to generate the line plots.
         """
         try:
             self.check_data()
