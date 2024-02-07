@@ -26,12 +26,21 @@ class TargetData():
         env_name (str): The name of the environment.
         analysis_results (dict): The results of the analysis.    
     """
-    def __init__(self, input_path: str, input_delimiter: str = None, label: str = None, index: str = None, output_path: str = None, env_name: str = None):
+    def __init__(self,
+                 input_path: str,
+                 input_delimiter: str = None,
+                 label: str = None,
+                 index: str = None,
+                 features: list[str] = None,
+                 output_path: str = None,
+                 env_name: str = None
+                ):
         logger.info("Initializing TargetData object.")
 
         self.data = None
         self.label = None
         self.index = None
+        self.features = None
         self.filename = None
         self.input_path = None
         self.processed_data = None
@@ -62,6 +71,12 @@ class TargetData():
         else:
             self.index = index
             logger.info(f"Using index: {self.index}")
+
+        if not features:
+            logger.info(f"No features provided.")
+        else:
+            self.features = features
+            logger.info(f"Using features: {self.features}")
 
         if not output_path:
             self.output_path = resolve_path("results")

@@ -14,24 +14,36 @@ logger = setup_logging(__name__)
 
 @use_decorator(emergency_logger)
 class DataExplorer():
-    """This class is used to explore the data."""
-    def __init__(self, target_data: object = None ,input_path: str = None, input_delimiter: str = None, index: str = None, output_path: str = None, env_name: str = None, label: str = None, pipeline: dict = None):
+    """
+    This class is used to explore the data.
+    
+    Available methods:
+    - descriptive_analysis: Generates descriptive statistics for the dataset.
+    - calculate_correlation: Calculates the correlation matrix for the dataset.
+    - missing_value_analysis: Generates plots for missing value analysis.
+    - correlation_analysis: Generates a heatmap of the correlation matrix for the dataset.
+    - outlier_analysis: Generates boxplots for outlier analysis.
+    - distribution_analysis: Generates distribution plots for the dataset.
+    - scatter_analysis: Generates scatter plots for the dataset.
+    - categorical_analysis: Generates count plots for categorical columns of the dataset.
+    - time_series_analysis: Generates time series plots for each column of the dataset.
+    - over_index_analysis: Generates plots for over-index analysis.
+    - run: Runs the pipeline of data exploration methods.
+    - cancel: Cancels the data exploration process.
+    """
+    def __init__(self, target_data: object, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
 
             self.figures = {}
             self.analysis_results = {}
-            self.target_data = None
 
-            if target_data is None:
-                target_data = TargetData(input_path=input_path, input_delimiter=input_delimiter, label=label, index=index, output_path=output_path, env_name=env_name)
-            
             self.target_data = target_data
-            logger.info(f"Data loaded from {self.target_data.input_path}")
+            logger.info(f"Data loaded from {target_data.input_path}.")
 
             self.data = self.target_data.data
-            self.label = self.target_data.label
             self.index = self.target_data.index
+            self.label = self.target_data.label
             self.filename = self.target_data.filename
             self.output_path = self.target_data.output_path
             self.env_name = self.target_data.env_name
@@ -51,7 +63,7 @@ class DataExplorer():
     def check_data(self):
         """Check if data is available."""
         try:
-            if self.target_data.processed_data is not None:
+            if self.target_data.processed_data:
                 self.data = self.target_data.processed_data
                 logger.info(f"Processed data loaded from {self.target_data.input_path}.")
         except Exception as e:

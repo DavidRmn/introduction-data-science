@@ -80,25 +80,21 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
 @use_decorator(emergency_logger)
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
-    def __init__(self, target_data: object = None ,input_path: str = None, input_delimiter: str = None, env_name: str = None, pipeline: dict = None, output_path: str = None):
+    def __init__(self, target_data: object, pipeline: dict = None):
         try:
             logger.info("Initializing DataPreparation")
 
             self.analysis_results = {}
             self.processed_data = None
-
-            if target_data is None:
-                self.target_data = TargetData(input_path=input_path, input_delimiter=input_delimiter, output_path=output_path, env_name=env_name)
-                logger.info(f"Data loaded from {self.target_data.input_path}.")
-            else:
-                self.target_data = target_data
-                logger.info(f"Data loaded from {self.target_data.input_path}.")
+            
+            self.target_data = target_data
+            logger.info(f"Data loaded from {target_data.input_path}.")
 
             self.data = self.target_data.data
             self.label = self.target_data.label
             self.filename = self.target_data.filename
-            self.output_path = self.target_data.output_path
             self.env_name = self.target_data.env_name
+            self.output_path = self.target_data.output_path
 
             if not pipeline:
                 self.pipeline = {}
