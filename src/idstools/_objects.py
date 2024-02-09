@@ -1,10 +1,12 @@
+import pandas as pd
+from idstools._data_models import TargetData
 from idstools._helpers import setup_logging
-from idstools._helpers import use_decorator, emergency_logger, log_results, resolve_path, read_data
+from idstools._helpers import use_decorator, emergency_logger, resolve_path, read_data
 
 logger = setup_logging(__name__)
 
-@use_decorator(emergency_logger, log_results)
-class TargetData():
+@use_decorator(emergency_logger)
+class Target(TargetData):
     """
     This class is used to load and share the target data.
 
@@ -36,17 +38,19 @@ class TargetData():
                  env_name: str = None
                 ):
         logger.info("Initializing TargetData object.")
-
-        self.data = None
-        self.label = None
-        self.index = None
-        self.features = None
-        self.filename = None
-        self.input_path = None
-        self.processed_data = None
-        self.output_path = None
-        self.env_name = None
-        self.analysis_results = {}
+        super().__init__(
+            data=pd.DataFrame(),
+            index=index,
+            label=label,
+            input_path=input_path,
+            input_delimiter=input_delimiter,
+            filename=None,
+            output_path=output_path,
+            env_name=env_name,
+            features=features,
+            processed_data=pd.DataFrame(),
+            analysis_results=dict()
+        )
 
         if not input_path:
             logger.error("Please provide an input path.")
@@ -63,19 +67,16 @@ class TargetData():
         if not label:
             logger.info(f"No label provided.")
         else:
-            self.label = label
             logger.info(f"Using label: {self.label}")
         
         if not index:
             logger.info(f"No index provided.")
         else:
-            self.index = index
             logger.info(f"Using index: {self.index}")
 
         if not features:
             logger.info(f"No features provided.")
         else:
-            self.features = features
             logger.info(f"Using features: {self.features}")
 
         if not output_path:
@@ -89,7 +90,6 @@ class TargetData():
             logger.info(f"No environment name provided.\nUsing default environment name: SELF_EXECUTED")
             self.env_name = "SELF_EXECUTED"
         else:
-            self.env_name = env_name
             logger.info(f"Using environment name: {self.env_name}")
 
     def run(self):

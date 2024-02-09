@@ -1,19 +1,30 @@
 default:
 
 task1:
-  _idstools_data:
-    TargetData:
+  _objects:
+    Target:
       input_path: "data/BikeRentalDaily_train.csv"
       input_delimiter: ";"
       index: "instant"
       label: "cnt"
+      features: ["season", "yr", "mnth", "holiday", "weekday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"]
 
   data_preparation:
     DataPreparation:
       pipeline:
         _CustomTransformer:
           - func: target_to_datetime
-            module: idstools._custom_transformer
+            module: idstools._transformer
             config:
               target: dteday
               format: "%d.%m.%Y"
+        _NaNDropper:
+          - target: hum
+          - target: season
+
+  model_optimization:
+    ModelOptimization:
+      pipeline:
+        train_test_split: true
+        linear_regression: true
+        validation: true

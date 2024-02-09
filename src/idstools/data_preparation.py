@@ -3,12 +3,24 @@ import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
+from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
-from idstools._idstools_data import TargetData
 from idstools._helpers import use_decorator, emergency_logger, setup_logging, write_data, result_logger
 
 logger = setup_logging(__name__)
 
+@use_decorator(emergency_logger)
+class _NaNDropper(BaseEstimator, TransformerMixin):
+    def __init__(self, config: list):
+        self.config = config
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        for element in self.config:
+            X = X.dropna(subset=[element["target"]])
+        return X
 @use_decorator(emergency_logger)
 class _SimpleImputer(BaseEstimator, TransformerMixin):
     def __init__(self, config: list):
@@ -80,21 +92,18 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
 @use_decorator(emergency_logger)
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
-    def __init__(self, target_data: object, pipeline: dict = None):
+    def __init__(self, target: TargetData, pipeline: dict = None):
         try:
-            logger.info("Initializing DataPreparation")
+            logger.info("Initializing DataExplorer")
 
-            self.analysis_results = {}
-            self.processed_data = None
-            
-            self.target_data = target_data
-            logger.info(f"Data loaded from {target_data.input_path}.")
+            # Initialize class variables
+            self._pipeline = None
+            self._processed_data = pd.DataFrame()
 
-            self.data = self.target_data.data
-            self.label = self.target_data.label
-            self.filename = self.target_data.filename
-            self.env_name = self.target_data.env_name
-            self.output_path = self.target_data.output_path
+            # Load data
+            self.target = target
+            self._data = self.target.data.copy()
+            logger.info(f"Data loaded from {self.target.input_path}.")
 
             if not pipeline:
                 self.pipeline = {}
@@ -111,9 +120,9 @@ class DataPreparation():
     def check_data(self):
         """Check if data is available."""
         try:
-            if self.target_data.processed_data:
-                self.data = self.target_data.processed_data
-                logger.info(f"Processed data loaded from {self.target_data.input_path}.")
+            if not self.target.processed_data.empty:
+                self._data = self.target.processed_data.copy()
+                logger.info(f"Processed data loaded from {self.target.input_path}.")
         except Exception as e:
             self.cancel(reason=f"Error in check_data: {e}")
 
@@ -123,25 +132,25 @@ class DataPreparation():
             for transformer in pipeline:
                 self._pipeline.set_params(**{transformer: eval(transformer)(config=pipeline[transformer])})
             logger.info(f"Pipeline created.")
-            result_logger.info(f"ENV:{self.env_name} Pipeline created:\n{pprint_dynaconf(pipeline)}")
+            result_logger.info(f"ENV:{self.target.env_name} Pipeline created:\n{pprint_dynaconf(pipeline)}")
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
 
     def run_pipeline(self, pipeline: dict):
-        try:
-            self.processed_data = self.data.copy()        
+        try:      
+            self._processed_data = self._data.copy()
             for transformer in pipeline:
-                self.processed_data = self._pipeline.named_steps[transformer].transform(self.processed_data)
+                self._processed_data = self._pipeline.named_steps[transformer].transform(self._processed_data)
                 logger.info(f"Pipeline step {transformer} has been processed.")
-            self.target_data.processed_data = self.processed_data
-            result_logger.info(f"ENV:{self.env_name} Processed data:\n{self.processed_data.head().T}")
+            self.target.processed_data = self._processed_data
+            result_logger.info(f"ENV:{self.target.env_name} Processed data:\n{self.target.processed_data.head().T}")
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 
     def write_data(self):
         try:
-            path = self.output_path / f"{self.env_name}_{self.filename}_processed.csv"
-            write_data(data=self.processed_data, output_path=path)
+            path = self.target.output_path / f"{self.target.env_name}_{self.target.filename}_processed.csv"
+            write_data(data=self.target.processed_data, output_path=path)
             logger.info(f"Processed data written to {path}.")
         except Exception as e:
             logger.error(f"Error in write_data: {e}")

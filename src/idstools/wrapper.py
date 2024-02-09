@@ -38,7 +38,7 @@ class Wrapper:
                 try:
                     logger.info(f"Processing environment: {env_name}")
                     # Check for TargetData configuration
-                    if class_name == "TargetData":
+                    if class_name == "Target":
                         self.current_target_data = self.initialize_and_run_module(module_name, class_name, class_config, env_name=env_name, is_target_data=True)
                         continue  # Skip further processing in this iteration
                     # For other modules, pass the current TargetData instance if available
@@ -61,10 +61,10 @@ class Wrapper:
                 else:
                     # Modify class_config to use the existing TargetData instance
                     # Assuming other modules can accept a TargetData instance through some parameter
-                    modified_config = {**class_config, 'target_data': target_data}
-                    instance = cls(**modified_config, env_name=env_name)
+                    modified_config = {**class_config, 'target': target_data}
+                    instance = cls(**modified_config)
             else:
-                instance = cls(**class_config, env_name=env_name)
+                instance = cls(**class_config)
 
             if hasattr(cls, 'run'):
                 logger.info(f"Instantiating and executing {class_name} in module {module_name}")

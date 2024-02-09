@@ -5,8 +5,8 @@ import seaborn as sns
 import missingno as msno
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
-from idstools._idstools_data import TargetData
 from idstools._helpers import use_decorator, emergency_logger, setup_logging, result_logger
 
 pd.set_option('display.precision', 2)
@@ -31,22 +31,27 @@ class DataExplorer():
     - run: Runs the pipeline of data exploration methods.
     - cancel: Cancels the data exploration process.
     """
-    def __init__(self, target_data: object, pipeline: dict = None):
+    def __init__(self, target: TargetData, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
 
+            # Initialize class variables
+            self._data = pd.DataFrame()
             self.figures = {}
-            self.analysis_results = {}
+            self.head = None
+            self.info = None
+            self.dtypes = None
+            self.describe = None
+            self.isnull = None
+            self.correlation = None
+            self.weak_correlation = None
+            self.moderate_correlation = None
+            self.strong_correlation = None
 
-            self.target_data = target_data
-            logger.info(f"Data loaded from {target_data.input_path}.")
-
-            self.data = self.target_data.data
-            self.index = self.target_data.index
-            self.label = self.target_data.label
-            self.filename = self.target_data.filename
-            self.output_path = self.target_data.output_path
-            self.env_name = self.target_data.env_name
+            # Load data
+            self.target = target
+            self._data = self.target.data.copy()
+            logger.info(f"Data loaded from {self.target.input_path}.")
 
             if not pipeline:
                 self.pipeline = {}
@@ -63,9 +68,9 @@ class DataExplorer():
     def check_data(self):
         """Check if data is available."""
         try:
-            if self.target_data.processed_data:
-                self.data = self.target_data.processed_data
-                logger.info(f"Processed data loaded from {self.target_data.input_path}.")
+            if not self.target.processed_data.empty:
+                self._data = self.target.processed_data.copy()
+                logger.info(f"Processed data loaded from {self.target.input_path}.")
         except Exception as e:
             self.cancel(reason=f"Error in check_data: {e}")
 
@@ -77,28 +82,28 @@ class DataExplorer():
         """
         try:
             self.check_data()
-            self.head = self.data.head().T
-            self.analysis_results["head"] = self.head
-            result_logger.info(f"ENV:{self.env_name} HEAD:\n{self.head}")
+            self.head = self._data.head().T
+            self.target.analysis_results["head"] = self.head
+            result_logger.info(f"ENV:{self.target.env_name} HEAD:\n{self.head}")
 
             buffer = io.StringIO()
-            self.data.info(buf=buffer)
+            self._data.info(buf=buffer)
             self.info = buffer.getvalue()
             buffer.close()
-            self.analysis_results["info"] = self.info
-            result_logger.info(f"ENV:{self.env_name} INFO:\n{self.info}")
+            self.target.analysis_results["info"] = self.info
+            result_logger.info(f"ENV:{self.target.env_name} INFO:\n{self.info}")
             
-            self.dtypes = self.data.dtypes
-            self.analysis_results["dtypes"] = self.dtypes
-            result_logger.info(f"ENV:{self.env_name} DTYPES:\n{self.dtypes}")
+            self.dtypes = self._data.dtypes
+            self.target.analysis_results["dtypes"] = self.dtypes
+            result_logger.info(f"ENV:{self.target.env_name} DTYPES:\n{self.dtypes}")
             
-            self.describe = self.data.describe().T
-            self.analysis_results["describe"] = self.describe
-            result_logger.info(f"ENV:{self.env_name} DESCRIBE:\n{self.describe}")
+            self.describe = self._data.describe().T
+            self.target.analysis_results["describe"] = self.describe
+            result_logger.info(f"ENV:{self.target.env_name} DESCRIBE:\n{self.describe}")
 
-            self.isnull = self.data.isnull().sum()
-            self.analysis_results["isnull"] = self.isnull
-            result_logger.info(f"ENV:{self.env_name} ISNULL:\n{self.isnull}")
+            self.isnull = self._data.isnull().sum()
+            self.target.analysis_results["isnull"] = self.isnull
+            result_logger.info(f"ENV:{self.target.env_name} ISNULL:\n{self.isnull}")
 
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
@@ -118,15 +123,20 @@ class DataExplorer():
         """
         try:
             self.check_data()
-            self.correlation = self.data.select_dtypes(include=['float64', 'int64']).corr(*args, **kwargs)[self.label].abs()
+            method = kwargs.get('method', 'pearson')
+            self.correlation = self._data.select_dtypes(include=['float64', 'int64']).corr(*args, **kwargs)[self.target.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[self.correlation <= 1]
+            self.target.analysis_results[f"{method}_correlation"] = self.correlation
             self.weak_correlation = self.correlation[self.correlation < 0.1]
+            self.target.analysis_results[f"{method}_weak_correlation"] = self.weak_correlation
             self.moderate_correlation = self.correlation[(self.correlation >= 0.1) & (self.correlation < 0.5)]
+            self.target.analysis_results[f"{method}_moderate_correlation"] = self.moderate_correlation
             self.strong_correlation = self.correlation[self.correlation >= 0.5]
-            result_logger.info(f"ENV:{self.env_name} STRONG CORRELATION:{self.strong_correlation}")
-            result_logger.info(f"ENV:{self.env_name} MEDIUM CORRELATION:{self.moderate_correlation}")
-            result_logger.info(f"ENV:{self.env_name} WEAK CORRELATION:\n{self.weak_correlation}")
+            self.target.analysis_results[f"{method}_strong_correlation"] = self.strong_correlation
+            result_logger.info(f"ENV:{self.target.env_name} STRONG CORRELATION:{self.strong_correlation}")
+            result_logger.info(f"ENV:{self.target.env_name} MEDIUM CORRELATION:{self.moderate_correlation}")
+            result_logger.info(f"ENV:{self.target.env_name} WEAK CORRELATION:\n{self.weak_correlation}")
         except Exception as e:
             logger.error(f"Error in calculate_correration: {e}")
 
@@ -142,9 +152,9 @@ class DataExplorer():
         """
         try:
             self.figures[plotname] = plt.figure(figsize=(16, 9))
-            lambda_func(self.data)
+            lambda_func(self._data)
             if save:
-                plt.savefig(self.output_path / f"{self.env_name}_{self.filename}_{plotname}.png")
+                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.filename}_{plotname}.png")
             plt.close(self.figures[plotname])
         except Exception as e:
             logger.error(f"Error in _generate_plot: {e}")
@@ -171,14 +181,14 @@ class DataExplorer():
             subplots = subplots.flatten() if num_plots > 1 else [subplots]
 
             for ax, (lambda_func, kwargs) in zip(subplots, lambdas):
-                lambda_func(self.data, ax)
+                lambda_func(self._data, ax)
                 ax.set_title(kwargs.get("title", ""), fontsize=10)
                 ax.set_ylabel(kwargs.get("ylabel", ""), fontsize=10)
                 ax.set_xlabel(kwargs.get("xlabel", ""), fontsize=10)
 
             plt.tight_layout()
             if save:
-                plt.savefig(self.output_path / f"{self.env_name}_{self.filename}_{plotname}.png")
+                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.filename}_{plotname}.png")
             plt.close(self.figures[plotname])
         except Exception as e:
             logger.error(f"Error in _generate_subplot: {e}")
@@ -241,7 +251,7 @@ class DataExplorer():
         try:
             self.check_data()
             lambdas = []
-            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Outlier Barplots"):
+            for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Outlier Barplots"):
                 lambdas.append(
                     (
                         lambda x, ax, column=column: sns.boxplot(x=x[column], ax=ax),
@@ -271,12 +281,12 @@ class DataExplorer():
         try:
             self.check_data()
             lambdas = []
-            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Distribution Plots"):
+            for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Distribution Plots"):
                 lambdas.append(
                     (
                     lambda x, ax, column=column: sns.histplot(x[column], kde=True, ax=ax),
                         {
-                        "title":f"Skew: {round(self.data[column].skew(), 2)}",
+                        "title":f"Skew: {round(self._data[column].skew(), 2)}",
                         "ylabel":column,
                         "xlabel":"Distribution"
                         }
@@ -301,13 +311,13 @@ class DataExplorer():
         try:
             self.check_data()
             lambdas = []
-            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Scatter Plots"):
+            for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Scatter Plots"):
                 lambdas.append(
                     (
-                    lambda x, ax, column=column: sns.scatterplot(x=x[column], y=x[self.label], ax=ax),
+                    lambda x, ax, column=column: sns.scatterplot(x=x[column], y=x[self.target.label], ax=ax),
                         {
-                        "title":f"Scatterplot of {column} vs {self.label}",
-                        "ylabel":self.label,
+                        "title":f"Scatterplot of {column} vs {self.target.label}",
+                        "ylabel":self.target.label,
                         "xlabel":column
                         }
                     )
@@ -331,7 +341,7 @@ class DataExplorer():
         try:
             self.check_data()
             lambdas = []
-            for column in tqdm(self.data.select_dtypes(include=['category']).columns, desc="Categorical Plots"):
+            for column in tqdm(self._data.select_dtypes(include=['category']).columns, desc="Categorical Plots"):
                 lambdas.append(
                     (
                     lambda x, ax, column=column: sns.countplot(x[column], ax=ax),
@@ -361,8 +371,8 @@ class DataExplorer():
         try:
             self.check_data()
             lambdas = []
-            for time_column in tqdm(self.data.select_dtypes(include=['datetime64']).columns):
-                for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Time Series Plots"):
+            for time_column in tqdm(self._data.select_dtypes(include=['datetime64']).columns):
+                for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Time Series Plots"):
                     lambdas.append(
                         (
                         lambda x, ax, column=column, time_column=time_column: sns.lineplot(x=x[time_column], y=x[column], ax=ax),
@@ -392,7 +402,7 @@ class DataExplorer():
         try:
             self.check_data()
             lambdas = []
-            for column in tqdm(self.data.select_dtypes(include=['float64', 'int64']).columns, desc="Over Index Plots"):
+            for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Over Index Plots"):
                 lambdas.append(
                     (
                     lambda x, ax, column=column: sns.lineplot(x=x.index, y=x[column], ax=ax),
