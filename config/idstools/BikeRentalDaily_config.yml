@@ -28,3 +28,27 @@ task1:
         train_test_split: true
         linear_regression: true
         validation: true
+
+task2:
+  _objects:
+    Target:
+      input_path: "results/TASK1_BikeRentalDaily_train_processed.csv"
+      label: "cnt"
+      
+  data_preparation:
+    DataPreparation:
+      pipeline:
+        _FeatureDropper:
+          - target: cnt
+            config:
+              axis: 1
+              errors: "ignore"
+          - target: atemp
+            config:
+              axis: 1
+              errors: "ignore"
+  
+  data_explorer:
+    DataExplorer:
+      pipeline:
+        variance_inflation_factor: true

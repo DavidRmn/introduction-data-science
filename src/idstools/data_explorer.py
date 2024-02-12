@@ -5,6 +5,8 @@ import seaborn as sns
 import missingno as msno
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.tools.tools import add_constant
 from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
 from idstools._helpers import use_decorator, emergency_logger, setup_logging, result_logger
@@ -20,6 +22,7 @@ class DataExplorer():
     Available methods:
     - descriptive_analysis: Generates descriptive statistics for the dataset.
     - calculate_correlation: Calculates the correlation matrix for the dataset.
+    - variance_inflation_factor: Calculates the variance inflation factor for the dataset.
     - missing_value_analysis: Generates plots for missing value analysis.
     - correlation_analysis: Generates a heatmap of the correlation matrix for the dataset.
     - outlier_analysis: Generates boxplots for outlier analysis.
@@ -139,6 +142,24 @@ class DataExplorer():
             result_logger.info(f"ENV:{self.target.env_name} WEAK CORRELATION:\n{self.weak_correlation}")
         except Exception as e:
             logger.error(f"Error in calculate_correration: {e}")
+
+    def variance_inflation_factor(self, *args, **kwargs):
+        """
+        Calculates the variance inflation factor for the dataset.
+
+        The variance inflation factor is calculated using the statsmodels library.
+        The variance_inflation_factor() method is used to calculate the variance inflation factor.
+        """
+        try:
+            self.check_data()
+            vif_data = add_constant(self._data.select_dtypes(include=['float64', 'int64']))
+            vif = pd.DataFrame()
+            vif["VIF Factor"] = [variance_inflation_factor(vif_data.values, i) for i in range(vif_data.shape[1])]
+            vif["features"] = vif_data.columns
+            self.target.analysis_results["vif"] = vif
+            result_logger.info(f"ENV:{self.target.env_name} VIF:\n{vif}")
+        except Exception as e:
+            logger.error(f"Error in variance_inflation_factor: {e}")
 
     def _generate_plot(self, lambda_func, plotname: str = None, save: bool = True):
         """

@@ -147,13 +147,31 @@ class ModelOptimization():
                 logger.info(f"Prediction for {model} completed successfully")
                 r2 = r2_score(self.y_test, prediction).round(2)
                 self.target.analysis_results[f"{model}_r2"] = r2
+                adjusted_r2 = self.calculate_adjusted_r_squared(r2, len(self.y_test), len(self.X_test.columns))
+                self.target.analysis_results[f"{model}_adjusted_r2"] = adjusted_r2
                 mae = mean_absolute_error(self.y_test, prediction).round(2)
                 self.target.analysis_results[f"{model}_mae"] = mae
                 logger.info(f"R2 score for {model}: {r2}")
+                logger.info(f"Adjusted R2 score for {model}: {adjusted_r2}")
                 logger.info(f"Mean Absolute Error for {model}: {mae}")
             logger.info("Validation completed successfully")
         except Exception as e:
             self.cancel(reason=f"Error in validation: {e}")
+
+    def calculate_adjusted_r_squared(self, r_squared, n, p):
+        """
+        Calculates the adjusted R-squared value for the model.
+
+        Args:
+            r_squared (float): The R-squared value of the model.
+            n (int): The number of observations in the dataset.
+            p (int): The number of predictors in the model (excluding the constant term).
+
+        Returns:
+            float: The adjusted R-squared value.
+        """
+        adjusted_r_squared = 1 - ((1 - r_squared) * (n - 1) / (n - p - 1))
+        return adjusted_r_squared
 
     def run(self):
         """
