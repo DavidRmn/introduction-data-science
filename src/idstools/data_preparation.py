@@ -126,7 +126,7 @@ class DataPreparation():
             for transformer in pipeline:
                 self._pipeline.set_params(**{transformer: eval(transformer)(config=pipeline[transformer])})
             logger.info(f"Pipeline created.")
-            result_logger.info(f"ENV:{self.target.env_name} Pipeline created:\n{pprint_dynaconf(pipeline)}")
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} Pipeline created:\n{pprint_dynaconf(pipeline)}")
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
 
@@ -137,13 +137,13 @@ class DataPreparation():
                 self._processed_data = self._pipeline.named_steps[transformer].transform(self._processed_data)
                 logger.info(f"Pipeline step {transformer} has been processed.")
             self.target.processed_data = self._processed_data
-            result_logger.info(f"ENV:{self.target.env_name} Processed data:\n{self.target.processed_data.head().T}")
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} Processed data:\n{self.target.processed_data.head().T}")
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 
     def write_data(self):
         try:
-            path = self.target.output_path / f"{self.target.env_name}_{self.target.filename}_processed.csv"
+            path = self.target.output_path / f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_processed.csv"
             write_data(data=self.target.processed_data, output_path=path)
             logger.info(f"Processed data written to {path}.")
         except Exception as e:

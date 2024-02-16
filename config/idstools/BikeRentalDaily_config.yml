@@ -1,5 +1,26 @@
 default:
-  Initialize_Target_Data:
+  Target_Data:
+    _objects:
+      Target:
+        input_path: "data/BikeRentalDaily_train.csv"
+        input_delimiter: ";"
+        index: "instant"
+        label: "cnt"
+
+Task1:
+  Initial_Exploration:
+    data_explorer:
+      DataExplorer:
+        pipeline:
+          missing_value_analysis: true
+          outlier_analysis: true
+          distribution_analysis: true
+          scatter_analysis: true
+          correlation_analysis: true
+          time_series_analysis: true
+
+Task2:
+  Linear_Regression_Data:
     _objects:
       Target:
         input_path: "data/BikeRentalDaily_train.csv"
@@ -7,14 +28,44 @@ default:
         index: "instant"
         label: "cnt"
         features: ["season", "yr", "mnth", "holiday", "weekday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"]
+  
+  Linear_Regression_Preprocessing:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _FeatureDropper:
+            - target: atemp
+              config:
+                axis: 1
+                errors: "ignore"
+            - target: mnth
+              config:
+                axis: 1
+                errors: "ignore"
+            - target: workingday
+              config:
+                axis: 1
+                errors: "ignore"
+            - target: casual
+              config:
+                axis: 1
+                errors: "ignore"
+          _NaNDropper:
+            - target: hum
+              config:
+                axis: 1
+                errors: "ignore"
+            - target: season
+              config:
+                axis: 1
+                errors: "ignore"
 
-  Explore_Data:
     data_explorer:
       DataExplorer:
         pipeline:
           correlation_analysis: true
 
-  Drop_Multi_Collinear_Features:
+  Random_Forest_Preprocessing:
     data_preparation:
       DataPreparation:
         pipeline:
@@ -37,8 +88,8 @@ default:
       DataExplorer:
         pipeline:
           correlation_analysis: true
-          vaiance_inflation_factor: true
 
+Task3:
   Transform_dteday_to_datetime:
     data_preparation:
       DataPreparation:

@@ -86,7 +86,7 @@ class Wrapper:
         logger.info(f"Completed preparation of environments: {list(environments.keys())}")
         return environments
     
-    def _instantiate_and_run_class(self, module_name, class_name, class_config, env_name=None, target=None, is_target=False):
+    def _instantiate_and_run_class(self, module_name, class_name, class_config, env_name=None, step_name=None, target=None, is_target=False):
         """
         Instantiate and run a class.
         
@@ -95,6 +95,7 @@ class Wrapper:
             class_name (str): Name of the class.
             class_config (dict): Configuration for the class.
             env_name (str): Name of the environment.
+            step_name (str): Name of the step.
             target (None): Placeholder for current TargetData instance.
             is_target (bool): Flag to indicate if the module is TargetData.
         """
@@ -107,11 +108,13 @@ class Wrapper:
                 logger.error(f"Error instantiating class {class_name}: No TargetData instance available.")
                 return
             if is_target is False:
+                target.env_name = env_name
+                target.step_name = step_name
                 instance = cls(**class_config, target=target)
                 logger.debug(f"Running class {class_name}")
                 instance.run()
                 return
-            instance = cls(**class_config, env_name=env_name)
+            instance = cls(**class_config, env_name=env_name, step_name=step_name)
             return instance
         except Exception as e:
             logger.error(f"Error instantiating class {class_name}: {e}")
@@ -129,9 +132,9 @@ class Wrapper:
             for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {step_name}"):
                 logger.info(f"Processing module: {module_name}")
                 if class_name == "Target":
-                    self.current_target = self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, is_target=True)
+                    self.current_target = self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, step_name=step_name, is_target=True)
                 else:
-                    self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, target=self.current_target)
+                    self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, step_name=step_name, target=self.current_target)
         except Exception as e:
             logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
             

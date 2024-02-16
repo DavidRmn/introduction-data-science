@@ -86,27 +86,27 @@ class DataExplorer():
         try:
             self._data = self.target.update_data()
             self.head = self._data.head().T
-            self.target.analysis_results["head"] = self.head
-            result_logger.info(f"ENV:{self.target.env_name} HEAD:\n{self.head}")
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_head"] = self.head
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} HEAD:\n{self.head}")
 
             buffer = io.StringIO()
             self._data.info(buf=buffer)
             self.info = buffer.getvalue()
             buffer.close()
-            self.target.analysis_results["info"] = self.info
-            result_logger.info(f"ENV:{self.target.env_name} INFO:\n{self.info}")
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_info"] = self.info
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} INFO:\n{self.info}")
             
             self.dtypes = self._data.dtypes
-            self.target.analysis_results["dtypes"] = self.dtypes
-            result_logger.info(f"ENV:{self.target.env_name} DTYPES:\n{self.dtypes}")
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_dtypes"] = self.dtypes
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} DTYPES:\n{self.dtypes}")
             
             self.describe = self._data.describe().T
-            self.target.analysis_results["describe"] = self.describe
-            result_logger.info(f"ENV:{self.target.env_name} DESCRIBE:\n{self.describe}")
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_describe"] = self.describe
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} DESCRIBE:\n{self.describe}")
 
             self.isnull = self._data.isnull().sum()
-            self.target.analysis_results["isnull"] = self.isnull
-            result_logger.info(f"ENV:{self.target.env_name} ISNULL:\n{self.isnull}")
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_isnull"] = self.isnull
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} ISNULL:\n{self.isnull}")
 
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
@@ -130,16 +130,16 @@ class DataExplorer():
             self.correlation = self._data.select_dtypes(include=['float64', 'int64']).corr(*args, **kwargs)[self.target.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[self.correlation <= 1]
-            self.target.analysis_results[f"{method}_correlation"] = self.correlation
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_correlation"] = self.correlation
             self.weak_correlation = self.correlation[self.correlation < 0.1]
-            self.target.analysis_results[f"{method}_weak_correlation"] = self.weak_correlation
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_weak_correlation"] = self.weak_correlation
             self.moderate_correlation = self.correlation[(self.correlation >= 0.1) & (self.correlation < 0.5)]
-            self.target.analysis_results[f"{method}_moderate_correlation"] = self.moderate_correlation
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_moderate_correlation"] = self.moderate_correlation
             self.strong_correlation = self.correlation[self.correlation >= 0.5]
-            self.target.analysis_results[f"{method}_strong_correlation"] = self.strong_correlation
-            result_logger.info(f"ENV:{self.target.env_name} STRONG CORRELATION:{self.strong_correlation}")
-            result_logger.info(f"ENV:{self.target.env_name} MEDIUM CORRELATION:{self.moderate_correlation}")
-            result_logger.info(f"ENV:{self.target.env_name} WEAK CORRELATION:\n{self.weak_correlation}")
+            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_strong_correlation"] = self.strong_correlation
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} STRONG CORRELATION:{self.strong_correlation}")
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} MEDIUM CORRELATION:{self.moderate_correlation}")
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} WEAK CORRELATION:\n{self.weak_correlation}")
         except Exception as e:
             logger.error(f"Error in calculate_correration: {e}")
 
@@ -177,7 +177,7 @@ class DataExplorer():
                     logger.warning(f"VIF warning: {warning.message}")
                 
             self.target.analysis_results["vif"] = vif
-            result_logger.info(f"ENV:{self.target.env_name} VIF calculation completed:\n{vif}")
+            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} VIF calculation completed:\n{vif}")
         except Exception as e:
             logger.error(f"Error in variance_inflation_factor method: {e}")
 
@@ -193,11 +193,11 @@ class DataExplorer():
             save (bool): Whether to save the plot.
         """
         try:
-            self.figures[plotname] = plt.figure(figsize=(16, 9))
+            self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"] = plt.figure(figsize=(16, 9))
             lambda_func(self._data)
             if save:
-                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.filename}_{plotname}.png")
-            plt.close(self.figures[plotname])
+                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}.png")
+            plt.close(self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"])
         except Exception as e:
             logger.error(f"Error in _generate_plot: {e}")
 
@@ -219,7 +219,7 @@ class DataExplorer():
             num_plots = len(lambdas)
             rows, cols = self._calculate_grid_size(num_plots)
             figsize = (cols * 4, rows * 3)
-            self.figures[plotname], subplots = plt.subplots(rows, cols, figsize=figsize)
+            self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"], subplots = plt.subplots(rows, cols, figsize=figsize)
             subplots = subplots.flatten() if num_plots > 1 else [subplots]
 
             for ax, (lambda_func, kwargs) in zip(subplots, lambdas):
@@ -230,8 +230,8 @@ class DataExplorer():
 
             plt.tight_layout()
             if save:
-                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.filename}_{plotname}.png")
-            plt.close(self.figures[plotname])
+                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}.png")
+            plt.close(self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"])
         except Exception as e:
             logger.error(f"Error in _generate_subplot: {e}")
 

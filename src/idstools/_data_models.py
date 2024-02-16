@@ -12,5 +12,6 @@ class TargetData:
     filename: str = None
     output_path: str = None
     env_name: str = None
+    step_name: str = None
     processed_data: pd.DataFrame = field(default_factory=pd.DataFrame)
     analysis_results: dict = None

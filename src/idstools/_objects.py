@@ -38,7 +38,8 @@ class Target(TargetData):
                  index: str = None,
                  features: list[str] = None,
                  output_path: str = None,
-                 env_name: str = None
+                 env_name: str = None,
+                 step_name: str = None
                 ):
         logger.info("Initializing TargetData object.")
         super().__init__(
@@ -50,6 +51,7 @@ class Target(TargetData):
             filename=None,
             output_path=output_path,
             env_name=env_name,
+            step_name=step_name,
             features=features,
             processed_data=pd.DataFrame(),
             analysis_results=dict()
@@ -79,6 +81,7 @@ class Target(TargetData):
 
         if not features:
             logger.info(f"No features provided.")
+            self.features = []
         else:
             logger.info(f"Using features: {self.features}")
 
@@ -94,6 +97,12 @@ class Target(TargetData):
             self.env_name = "SELF_EXECUTED"
         else:
             logger.info(f"Using environment name: {self.env_name}")
+        
+        if not step_name:
+            logger.info(f"No step name provided.")
+            self.step_name = "STEP"
+        else:
+            logger.info(f"Using step name: {self.step_name}")
     
     def update_data(self) -> pd.DataFrame:
         """Update the data attribute with the processed data."""
