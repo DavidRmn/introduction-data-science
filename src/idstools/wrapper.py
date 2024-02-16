@@ -14,7 +14,7 @@ class Wrapper:
 
     Attributes:
         config (PrettyDynaconf): Configuration object.
-        current_target_data (None): Placeholder for current TargetData instance.
+        current_target (None): Placeholder for current TargetData instance.
         environments (dict): Dictionary of environments and their steps.
     
     Methods:
