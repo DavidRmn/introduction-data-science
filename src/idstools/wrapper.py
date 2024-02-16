@@ -21,8 +21,10 @@ class Wrapper:
         _prepare_classes: Prepare modules from configuration.
         _prepare_modules: Prepare environment from configuration.
         _prepare_environments: Prepare configuration for the wrapper.
-        _initialize_and_run_module: Initialize and run a module.
-        run: Execute all environments and their modules.
+        _instantiate_and_run_class: Instantiate and run a class.
+        _process_modules: Processing modules in a step.
+        _process_steps: Process steps in an environment.
+        run: Process all environments and their modules.
     """
     def __init__(self, config: PrettyDynaconf):
         self.config = config
@@ -84,9 +86,9 @@ class Wrapper:
         logger.info(f"Completed preparation of environments: {list(environments.keys())}")
         return environments
     
-    def _initialize_and_run_module(self, module_name, class_name, class_config, env_name=None, target=None, is_target=False):
+    def _instantiate_and_run_class(self, module_name, class_name, class_config, env_name=None, target=None, is_target=False):
         """
-        Initialize and run a module.
+        Instantiate and run a class.
         
         Args:
             module_name (str): Name of the module.
@@ -114,9 +116,9 @@ class Wrapper:
         except Exception as e:
             logger.error(f"Error instantiating class {class_name}: {e}")
 
-    def _execute_module(self, modules, step_name, env_name):
+    def _process_modules(self, modules, step_name, env_name):
         """
-        Execute modules in a step.
+        Processing modules in a step.
 
         Args:
             modules (dict): Dictionary of modules and their classes.
@@ -127,15 +129,15 @@ class Wrapper:
             for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {step_name}"):
                 logger.info(f"Processing module: {module_name}")
                 if class_name == "Target":
-                    self.current_target = self._initialize_and_run_module(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, is_target=True)
+                    self.current_target = self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, is_target=True)
                 else:
-                    self._initialize_and_run_module(module_name=module_name, class_name=class_name, class_config=class_config, target=self.current_target)
+                    self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, target=self.current_target)
         except Exception as e:
             logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
             
     def _process_steps(self, env_name, steps):
         """
-        Execute steps in an environment.
+        Process steps in an environment.
 
         Args:
             env_name (str): Name of the environment.
@@ -144,16 +146,16 @@ class Wrapper:
         try:
             for step_name, modules in tqdm(steps.items(), desc=f"Steps in {env_name}"):
                 logger.info(f"Processing step: {step_name}")
-                self._execute_module(modules, step_name, env_name)
+                self._process_modules(modules, step_name, env_name)
         except Exception as e:
             logger.error(f"Error processing step {step_name} in environment {env_name}: {e}")        
     
     def run(self):
         """
-        Execute all environments and their modules.
+        Process all environments and their modules.
         """
-        logger.info("Starting execution of environments.")
+        logger.info("Start processing of environments.")
         for env_name, steps in tqdm(self.environments.items(), desc="Environments"):
-            logger.info(f"Executing environment: {env_name}")
+            logger.info(f"Processing environment: {env_name}")
             self._process_steps(env_name, steps)
-        logger.info("Finished execution of all environments.")
+        logger.info("Finished processing of all environments.")
