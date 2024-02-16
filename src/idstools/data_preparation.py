@@ -11,6 +11,7 @@ logger = setup_logging(__name__)
 
 @use_decorator(emergency_logger)
 class _NaNDropper(BaseEstimator, TransformerMixin):
+    """This class is used to drop rows with NaN values."""
     def __init__(self, config: list):
         self.config = config
 
@@ -23,6 +24,7 @@ class _NaNDropper(BaseEstimator, TransformerMixin):
         return X
 @use_decorator(emergency_logger)
 class _SimpleImputer(BaseEstimator, TransformerMixin):
+    """This class is used to impute NaN values."""
     def __init__(self, config: list):
         self.config = config
 
@@ -37,6 +39,7 @@ class _SimpleImputer(BaseEstimator, TransformerMixin):
     
 @use_decorator(emergency_logger)
 class _OneHotEncoder(BaseEstimator, TransformerMixin):
+    """This class is used to one-hot-encode categorical features."""
     def __init__(self, config: list):
         self.config = config
 
@@ -52,6 +55,7 @@ class _OneHotEncoder(BaseEstimator, TransformerMixin):
     
 @use_decorator(emergency_logger)   
 class _FeatureDropper(BaseEstimator, TransformerMixin):
+    """This class is used to drop features."""
     def __init__(self, config: list):
         self.config = config
 
@@ -65,6 +69,7 @@ class _FeatureDropper(BaseEstimator, TransformerMixin):
 
 @use_decorator(emergency_logger)
 class _CustomTransformer(BaseEstimator, TransformerMixin):
+    """This class is used to apply custom transformations."""
     def __init__(self, config: list):
         self.config = config
 
@@ -102,7 +107,7 @@ class DataPreparation():
 
             # Load data
             self.target = target
-            self._data = self.target.data.copy()
+            self._data = self.target.update_data()
             logger.info(f"Data loaded from {self.target.input_path}.")
 
             if not pipeline:
@@ -111,20 +116,9 @@ class DataPreparation():
             else:
                 self.pipeline = pipeline
                 logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
-            
-            self.check_data()
 
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
-
-    def check_data(self):
-        """Check if data is available."""
-        try:
-            if not self.target.processed_data.empty:
-                self._data = self.target.processed_data.copy()
-                logger.info(f"Processed data loaded from {self.target.input_path}.")
-        except Exception as e:
-            self.cancel(reason=f"Error in check_data: {e}")
 
     def build_pipeline(self, pipeline: dict):
         try:
@@ -157,7 +151,7 @@ class DataPreparation():
 
     def run(self):
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             self.build_pipeline(pipeline=self.pipeline)
             self.run_pipeline(pipeline=self.pipeline)
             self.write_data()

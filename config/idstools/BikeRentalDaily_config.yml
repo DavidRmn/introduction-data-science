@@ -1,54 +1,59 @@
 default:
+  Initialize_Target_Data:
+    _objects:
+      Target:
+        input_path: "data/BikeRentalDaily_train.csv"
+        input_delimiter: ";"
+        index: "instant"
+        label: "cnt"
+        features: ["season", "yr", "mnth", "holiday", "weekday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"]
 
-task1:
-  _objects:
-    Target:
-      input_path: "data/BikeRentalDaily_train.csv"
-      input_delimiter: ";"
-      index: "instant"
-      label: "cnt"
-      features: ["season", "yr", "mnth", "holiday", "weekday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"]
+  Explore_Data:
+    data_explorer:
+      DataExplorer:
+        pipeline:
+          correlation_analysis: true
 
-  data_preparation:
-    DataPreparation:
-      pipeline:
-        _CustomTransformer:
-          - func: target_to_datetime
-            module: idstools._transformer
-            config:
-              target: dteday
-              format: "%d.%m.%Y"
-        _NaNDropper:
-          - target: hum
-          - target: season
+  Drop_Multi_Collinear_Features:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _FeatureDropper:
+            - target: atemp
+              config:
+                axis: 1
+                errors: "ignore"
+          _NaNDropper:
+            - target: hum
+              config:
+                axis: 1
+                errors: "ignore"
+            - target: season
+              config:
+                axis: 1
+                errors: "ignore"
+                
+    data_explorer:
+      DataExplorer:
+        pipeline:
+          correlation_analysis: true
+          vaiance_inflation_factor: true
 
-  model_optimization:
-    ModelOptimization:
-      pipeline:
-        train_test_split: true
-        linear_regression: true
-        validation: true
+  Transform_dteday_to_datetime:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _CustomTransformer:
+            - func: target_to_datetime
+              module: idstools._transformer
+              config:
+                target: dteday
+                format: "%d.%m.%Y"
 
-task2:
-  _objects:
-    Target:
-      input_path: "results/TASK1_BikeRentalDaily_train_processed.csv"
-      label: "cnt"
-      
-  data_preparation:
-    DataPreparation:
-      pipeline:
-        _FeatureDropper:
-          - target: cnt
-            config:
-              axis: 1
-              errors: "ignore"
-          - target: atemp
-            config:
-              axis: 1
-              errors: "ignore"
-  
-  data_explorer:
-    DataExplorer:
-      pipeline:
-        variance_inflation_factor: true
+  Evaluate_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          train_test_split: true
+          linear_regression: true
+          validation: true

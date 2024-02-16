@@ -26,7 +26,10 @@ class Target(TargetData):
         processed_data (pandas.DataFrame): The processed data.
         output_path (str): The path to the output data.
         env_name (str): The name of the environment.
-        analysis_results (dict): The results of the analysis.    
+        analysis_results (dict): The results of the analysis.
+
+    Methods:
+        update_data: Update the data attribute with the processed data.  
     """
     def __init__(self,
                  input_path: str,
@@ -91,6 +94,13 @@ class Target(TargetData):
             self.env_name = "SELF_EXECUTED"
         else:
             logger.info(f"Using environment name: {self.env_name}")
-
-    def run(self):
-        pass
+    
+    def update_data(self) -> pd.DataFrame:
+        """Update the data attribute with the processed data."""
+        try:
+            if not self.processed_data.empty:
+                self.features = list(set(self.features) & set(self.processed_data.columns.tolist()))
+                return self.processed_data
+        except Exception as e:
+            logger.error(f"Error updating data: {e}")
+        return self.data

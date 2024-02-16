@@ -1,5 +1,7 @@
 import io
 import math
+import warnings
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import missingno as msno
@@ -53,7 +55,7 @@ class DataExplorer():
 
             # Load data
             self.target = target
-            self._data = self.target.data.copy()
+            self._data = self.target.update_data()
             logger.info(f"Data loaded from {self.target.input_path}.")
 
             if not pipeline:
@@ -62,8 +64,6 @@ class DataExplorer():
             else:
                 self.pipeline = pipeline
                 logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
-            
-            self.check_data()
 
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
@@ -84,7 +84,7 @@ class DataExplorer():
         Descriptive statistics include the head, info, dtypes, describe, and isnull attributes.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             self.head = self._data.head().T
             self.target.analysis_results["head"] = self.head
             result_logger.info(f"ENV:{self.target.env_name} HEAD:\n{self.head}")
@@ -125,7 +125,7 @@ class DataExplorer():
             e.g. method='pearson', method='spearman' or method='kendall'
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             method = kwargs.get('method', 'pearson')
             self.correlation = self._data.select_dtypes(include=['float64', 'int64']).corr(*args, **kwargs)[self.target.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
@@ -145,21 +145,42 @@ class DataExplorer():
 
     def variance_inflation_factor(self, *args, **kwargs):
         """
-        Calculates the variance inflation factor for the dataset.
+        Calculates the variance inflation factor for the dataset, handling potential numerical issues gracefully.
 
         The variance inflation factor is calculated using the statsmodels library.
-        The variance_inflation_factor() method is used to calculate the variance inflation factor.
+        This version includes handling for divide by zero warnings and improves data appending efficiency.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
+            # Select numeric types only for VIF computation
             vif_data = add_constant(self._data.select_dtypes(include=['float64', 'int64']))
-            vif = pd.DataFrame()
-            vif["VIF Factor"] = [variance_inflation_factor(vif_data.values, i) for i in range(vif_data.shape[1])]
-            vif["features"] = vif_data.columns
+            
+            # Initialize an empty list to store VIF data
+            vif_records = []
+            
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter("always")
+                for i in range(vif_data.shape[1]):
+                    try:
+                        vif_value = variance_inflation_factor(vif_data.values, i)
+                    except Exception as e:
+                        logger.error(f"VIF calculation failed for feature at index {i} due to: {e}")
+                        vif_value = np.nan  # Assign NaN or another placeholder value indicating failure
+                    
+                    vif_records.append({"VIF Factor": vif_value, "features": vif_data.columns[i]})
+                
+                # Convert the list of dictionaries to a DataFrame
+                vif = pd.DataFrame(vif_records)
+                
+                # Log any warnings captured
+                for warning in w:
+                    logger.warning(f"VIF warning: {warning.message}")
+                
             self.target.analysis_results["vif"] = vif
-            result_logger.info(f"ENV:{self.target.env_name} VIF:\n{vif}")
+            result_logger.info(f"ENV:{self.target.env_name} VIF calculation completed:\n{vif}")
         except Exception as e:
-            logger.error(f"Error in variance_inflation_factor: {e}")
+            logger.error(f"Error in variance_inflation_factor method: {e}")
+
 
     def _generate_plot(self, lambda_func, plotname: str = None, save: bool = True):
         """
@@ -223,7 +244,7 @@ class DataExplorer():
         msno.bar() and msno.matrix() are used to generate the barplot and matrix, respectively.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             self._generate_plot(
                 lambda_func=lambda x: msno.bar(x).set_title("Missing Value Barplot"),
                 plotname="missing_value_bar",
@@ -247,7 +268,7 @@ class DataExplorer():
         sns.heatmap() is used to generate the heatmap.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             self._generate_plot(
                 lambda_func=lambda x: sns.heatmap(
                     x.corr(numeric_only=True),
@@ -270,7 +291,7 @@ class DataExplorer():
         sns.boxplot() is used to generate the boxplots.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             lambdas = []
             for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Outlier Barplots"):
                 lambdas.append(
@@ -300,7 +321,7 @@ class DataExplorer():
         sns.histplot() is used to generate the distribution plots.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             lambdas = []
             for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Distribution Plots"):
                 lambdas.append(
@@ -330,7 +351,7 @@ class DataExplorer():
         sns.scatterplot() is used to generate the scatter plots.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             lambdas = []
             for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Scatter Plots"):
                 lambdas.append(
@@ -360,7 +381,7 @@ class DataExplorer():
         sns.countplot() is used to generate the count plots.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             lambdas = []
             for column in tqdm(self._data.select_dtypes(include=['category']).columns, desc="Categorical Plots"):
                 lambdas.append(
@@ -390,7 +411,7 @@ class DataExplorer():
         sns.lineplot() is used to generate the time series plots.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             lambdas = []
             for time_column in tqdm(self._data.select_dtypes(include=['datetime64']).columns):
                 for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Time Series Plots"):
@@ -421,7 +442,7 @@ class DataExplorer():
         sns.lineplot() is used to generate the line plots.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             lambdas = []
             for column in tqdm(self._data.select_dtypes(include=['float64', 'int64']).columns, desc="Over Index Plots"):
                 lambdas.append(

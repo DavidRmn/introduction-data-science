@@ -1,77 +1,159 @@
 import importlib
 from tqdm import tqdm
 from idstools._config import PrettyDynaconf
-from idstools._helpers import setup_logging, result_logger
+from idstools._helpers import setup_logging
 
 logger = setup_logging(__name__)
 
 class Wrapper:
+    """
+    Wrapper class for executing multiple environments and modules.
+    
+    Args:
+        config (PrettyDynaconf): Configuration object.
+
+    Attributes:
+        config (PrettyDynaconf): Configuration object.
+        current_target_data (None): Placeholder for current TargetData instance.
+        environments (dict): Dictionary of environments and their steps.
+    
+    Methods:
+        _prepare_classes: Prepare modules from configuration.
+        _prepare_modules: Prepare environment from configuration.
+        _prepare_environments: Prepare configuration for the wrapper.
+        _initialize_and_run_module: Initialize and run a module.
+        run: Execute all environments and their modules.
+    """
     def __init__(self, config: PrettyDynaconf):
         self.config = config
-        self.current_target_data = None
-        self.environments = self.__instantiate_modules()
+        self.current_target = None
+        self.environments = self._prepare_environments()
 
-    def __instantiate_modules(self):
+    def _prepare_classes(self, env_name, step_config) -> dict:
+        """
+        Prepare modules from configuration.
+        
+        Args:
+            step_config (dict): Configuration for the step.
+
+        Returns:
+            dict: Dictionary of module names and their classes.
+        """
+        module_classes = {}
+        for module_name, module_config in step_config.items():
+            try:
+                class_name = next(iter(module_config))
+                module_classes[module_name] = (class_name, module_config[class_name])
+                logger.debug(f"Instantiated {class_name} for module {module_name} in environment {env_name}")
+            except Exception as e:
+                logger.error(f"Error instantiating module {module_name} in environment {env_name}: {e}")
+        return module_classes
+
+    def _prepare_modules(self, env_name, env_config) -> dict:
+        """
+        Prepare environment from configuration.
+        
+        Args:
+            env_config (dict): Configuration for the environment.
+
+        Returns:
+            dict: Dictionary of steps and their modules.
+        """
+        environment_steps = {}
+        for step_name, step_config in env_config.items():
+            try:
+                environment_steps[step_name] = self._prepare_classes(env_name, step_config)
+                logger.debug(f"Prepared step {step_name} in environment {env_name}")
+            except Exception as e:
+                logger.error(f"Error preparing step {step_name} in environment {env_name}: {e}")
+        return environment_steps
+
+    def _prepare_environments(self):
+        """
+        Prepare configuration for the wrapper.
+        """
         environments = {}
-        logger.info("Instantiating environments from configuration.")
+        logger.info("Reading environments from configuration.")
         for env_name, env_config in self.config.to_dict().items():
-            logger.debug(f"Processing environment: {env_name}")
-            module_classes = {}
-            if env_config:
-                for module_name, module_config in env_config.items():
-                    try:
-                        class_name = next(iter(module_config))
-                        module_classes[module_name] = (class_name, module_config[class_name])
-                        logger.debug(f"Configured {class_name} for module {module_name} in environment {env_name}")
-                    except Exception as e:
-                        logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
-            environments[env_name] = module_classes
-        logger.info(f"Completed instantiation of environments: {list(environments.keys())}")
+            if not env_config:
+                logger.error(f"No configuration found for environment: {env_name}")
+                return
+            logger.debug(f"Preparing environment: {env_name}")
+            environment_steps = self._prepare_modules(env_name, env_config)
+            environments[env_name] = environment_steps
+        logger.info(f"Completed preparation of environments: {list(environments.keys())}")
         return environments
-
-    def run(self):
-        logger.info("Starting execution of environments.")
-        for env_name, modules in tqdm(self.environments.items(), desc="Environments"):
-            self.current_target_data = None  # Reset for each environment
-            logger.info(f"Executing environment: {env_name}")
-            for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {env_name}"):
-                try:
-                    logger.info(f"Processing environment: {env_name}")
-                    # Check for TargetData configuration
-                    if class_name == "Target":
-                        self.current_target_data = self.initialize_and_run_module(module_name, class_name, class_config, env_name=env_name, is_target_data=True)
-                        continue  # Skip further processing in this iteration
-                    # For other modules, pass the current TargetData instance if available
-                    self.initialize_and_run_module(module_name, class_name, class_config, target_data=self.current_target_data)
-                except Exception as e:
-                    logger.error(f"Error executing module {module_name} in environment {env_name}: {e}")
-        logger.info("Finished execution of all environments.")
-
-    def initialize_and_run_module(self, module_name, class_name, class_config, env_name=None, target_data=None, is_target_data=False):
+    
+    def _initialize_and_run_module(self, module_name, class_name, class_config, env_name=None, target=None, is_target=False):
+        """
+        Initialize and run a module.
+        
+        Args:
+            module_name (str): Name of the module.
+            class_name (str): Name of the class.
+            class_config (dict): Configuration for the class.
+            env_name (str): Name of the environment.
+            target (None): Placeholder for current TargetData instance.
+            is_target (bool): Flag to indicate if the module is TargetData.
+        """
         try:
-            logger.debug(f"Loading module {module_name} for class {class_name}")
+            logger.debug(f"Importing module {module_name} for class {class_name}")
             module_path = f"idstools.{module_name.lower()}"
             module = importlib.import_module(module_path)
             cls = getattr(module, class_name)
-
-            # If this is the TargetData module or another module requires the current TargetData instance
-            if is_target_data or target_data:
-                if is_target_data:
-                    instance = cls(**class_config, env_name=env_name)
-                else:
-                    # Modify class_config to use the existing TargetData instance
-                    # Assuming other modules can accept a TargetData instance through some parameter
-                    modified_config = {**class_config, 'target': target_data}
-                    instance = cls(**modified_config)
-            else:
-                instance = cls(**class_config)
-
-            if hasattr(cls, 'run'):
-                logger.info(f"Instantiating and executing {class_name} in module {module_name}")
+            if is_target is False and target is None:
+                logger.error(f"Error instantiating class {class_name}: No TargetData instance available.")
+                return
+            if is_target is False:
+                instance = cls(**class_config, target=target)
+                logger.debug(f"Running class {class_name}")
                 instance.run()
-                if is_target_data:
-                    return instance  # Return the TargetData instance for reuse
-            else:
-                logger.warning(f"Class {class_name} in module {module_name} does not have a 'run' method")
+                return
+            instance = cls(**class_config, env_name=env_name)
+            return instance
         except Exception as e:
-            logger.error(f"Exception during execution of module {module_name}: {e}")
+            logger.error(f"Error instantiating class {class_name}: {e}")
+
+    def _execute_module(self, modules, step_name, env_name):
+        """
+        Execute modules in a step.
+
+        Args:
+            modules (dict): Dictionary of modules and their classes.
+            step_name (str): Name of the step.
+            env_name (str): Name of the environment.
+        """
+        try:
+            for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {step_name}"):
+                logger.info(f"Processing module: {module_name}")
+                if class_name == "Target":
+                    self.current_target = self._initialize_and_run_module(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, is_target=True)
+                else:
+                    self._initialize_and_run_module(module_name=module_name, class_name=class_name, class_config=class_config, target=self.current_target)
+        except Exception as e:
+            logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
+            
+    def _process_steps(self, env_name, steps):
+        """
+        Execute steps in an environment.
+
+        Args:
+            env_name (str): Name of the environment.
+            steps (dict): Dictionary of steps and their modules.
+        """
+        try:
+            for step_name, modules in tqdm(steps.items(), desc=f"Steps in {env_name}"):
+                logger.info(f"Processing step: {step_name}")
+                self._execute_module(modules, step_name, env_name)
+        except Exception as e:
+            logger.error(f"Error processing step {step_name} in environment {env_name}: {e}")        
+    
+    def run(self):
+        """
+        Execute all environments and their modules.
+        """
+        logger.info("Starting execution of environments.")
+        for env_name, steps in tqdm(self.environments.items(), desc="Environments"):
+            logger.info(f"Executing environment: {env_name}")
+            self._process_steps(env_name, steps)
+        logger.info("Finished execution of all environments.")

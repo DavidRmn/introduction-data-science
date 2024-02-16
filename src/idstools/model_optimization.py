@@ -1,8 +1,9 @@
 import pandas as pd
+from seaborn import residplot
 from lazypredict.Supervised import LazyRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_absolute_error, r2_score
-from sklearn.model_selection import TimeSeriesSplit, train_test_split
+from sklearn.model_selection import TimeSeriesSplit, train_test_split, learning_curve, LearningCurveDisplay
 from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
 from idstools._helpers import emergency_logger, setup_logging, result_logger
@@ -27,7 +28,7 @@ class ModelOptimization():
 
             # load data
             self.target = target
-            self._data = self.target.data.copy()
+            self._data = self.target.update_data()
             logger.info(f"Data loaded from {target.input_path}.")
 
             if not pipeline:
@@ -36,27 +37,16 @@ class ModelOptimization():
             else:
                 self.pipeline = pipeline
                 logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
-            
-            self.check_data()
 
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
-
-    def check_data(self):
-        """Check if data is available."""
-        try:
-            if not self.target.processed_data.empty:
-                self._data = self.target.processed_data.copy()
-                logger.info(f"Processed data loaded from {self.target.input_path}.")
-        except Exception as e:
-            self.cancel(reason=f"Error in check_data: {e}")
 
     def train_test_split(self):
         """
         This function is used to split the data into training and testing sets.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             logger.info("Running train_test_split")
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self._data[self.target.features], self._data[self.target.label], test_size=0.2, random_state=42)
             logger.info("train_test_split completed successfully")
@@ -68,7 +58,7 @@ class ModelOptimization():
         This function is used to split the data into training, testing, and validation sets.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             logger.info("Running train_test_validation_split")
             self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self._data[self.target.features], self._data[self.target.label], test_size=0.2, random_state=42)
             self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X_train, self.y_train, test_size=0.2, random_state=42)
@@ -81,7 +71,7 @@ class ModelOptimization():
         This function is used to split the data into training and testing sets on a yearly basis.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             logger.info("Running split_on_yearly_basis")
             self.X_train, self.X_test = self._data[self._data['year'] < 2019][self.target.features], self._data[self._data['year'] >= 2019][self.target.features]
             self.y_train, self.y_test = self._data[self._data['year'] < 2019][self.target.label], self._data[self._data['year'] >= 2019][self.target.label]
@@ -94,7 +84,7 @@ class ModelOptimization():
         This function is used to split the data into training and testing sets.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             logger.info("Running time_series_split")
             tscv = TimeSeriesSplit(n_splits=5)
             for train_index, test_index in tscv.split(self._data):
@@ -109,7 +99,6 @@ class ModelOptimization():
         This function is used to run the linear regression model.
         """
         try:
-            self.check_data()
             logger.info("Running linear_regression")
             reg = LinearRegression()
             reg.fit(self.X_train, self.y_train)
@@ -124,7 +113,7 @@ class ModelOptimization():
         This function is used to run the lazy regressor model.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             logger.info("Running lazy_regressor")
             reg = LazyRegressor(verbose=0, ignore_warnings=True, custom_metric=None)
             models = reg.fit(self.X_train, self.X_test, self.y_train, self.y_test)
@@ -138,7 +127,7 @@ class ModelOptimization():
         This function is used to validate the model.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
 
             logger.info("Running validation")
             for model in self._models:
@@ -172,13 +161,110 @@ class ModelOptimization():
         """
         adjusted_r_squared = 1 - ((1 - r_squared) * (n - 1) / (n - p - 1))
         return adjusted_r_squared
+    
+    def residual_analysis(self):
+        """
+        This function is used to analyze the residuals of the model.
+        """
+        try:
+            self._data = self.target.update_data()
+            logger.info("Running residual_analysis")
+            for model in self._models:
+                logger.info(f"Residual analysis for {model}")
+                prediction = self._models[model].predict(self.X_test)
+                self.target.analysis_results[f"{model}_prediction"] = prediction
+                residuals = self.y_test - prediction
+                logger.info(f"Residuals for {model} completed successfully")
+                self.target.analysis_results[f"{model}_residuals"] = residuals
+                logger.info(f"Residual analysis for {model} completed successfully")
+            logger.info("Residual analysis completed successfully")
+        except Exception as e:
+            self.cancel(reason=f"Error in residual_analysis: {e}")
+
+    def plot_residuals(self, save: bool = False):
+        """
+        This function is used to plot the residuals of the model.
+        """
+        try:
+            self._data = self.target.update_data()
+            logger.info("Running plot_residuals")
+            for model in self._models:
+                logger.info(f"Plotting residuals for {model}")
+                residuals = self.target.analysis_results[f"{model}_residuals"]
+                prediction = self.target.analysis_results[f"{model}_prediction"]
+                residuals = residplot(x=prediction, y=residuals)
+                residuals.set(xlabel='Fitted values', ylabel='Residuals')
+                residuals.set_title(f"Residuals for {model}")
+                self.target.analysis_results[f"{model}_residuals_plot"] = residuals
+                if save:
+                    residuals.get_figure().savefig(f"{self.target.output_path}/residuals_{model}.png")
+                logger.info(f"Residuals for {model} plotted successfully")
+            logger.info("Plot_residuals completed successfully")
+        except Exception as e:
+            self.cancel(reason=f"Error in plot_residuals: {e}")
+
+    def feature_importance(self):
+        """
+        This function is used to calculate the feature importance of the model.
+        """
+        try:
+            self._data = self.target.update_data()
+            logger.info("Running feature_importance")
+            for model in self._models:
+                logger.info(f"Feature importance for {model}")
+                if model == 'linear_regression':
+                    feature_importance = self._models[model].coef_
+                else:
+                    feature_importance = self._models[model].feature_importances_
+                self.target.analysis_results[f"{model}_feature_importance"] = feature_importance
+                logger.info(f"Feature importance for {model} completed successfully")
+            logger.info("Feature importance completed successfully")
+        except Exception as e:
+            self.cancel(reason=f"Error in feature_importance: {e}")
+
+    def plot_feature_importance(self):
+        """
+        This function is used to plot the feature importance of the model.
+        """
+        try:
+            self._data = self.target.update_data()
+            logger.info("Running plot_feature_importance")
+            for model in self._models:
+                logger.info(f"Plotting feature importance for {model}")
+                feature_importance = self.target.analysis_results[f"{model}_feature_importance"]
+                pd.Series(feature_importance, index=self.X_train.columns).nlargest(10).plot(kind='barh')
+                logger.info(f"Feature importance for {model} plotted successfully")
+            logger.info("Plot_feature_importance completed successfully")
+        except Exception as e:
+            self.cancel(reason=f"Error in plot_feature_importance: {e}")
+
+    def learning_curve(self):
+        """
+        This function is used to plot the learning curve of the model.
+        """
+        try:
+            self._data = self.target.update_data()
+            logger.info("Running learning_curve")
+            for model in self._models:
+                logger.info(f"Plotting learning curve for {model}")
+                if model == 'linear_regression':
+                    train_sizes, train_scores, test_scores = learning_curve(self._models[model], self.X_train, self.y_train, cv=5, scoring='neg_mean_squared_error')
+                    display = LearningCurveDisplay(train_sizes=train_sizes, train_scores=train_scores, test_scores=test_scores, score_name='neg_mean_squared_error')
+                    display.plot()
+                else:
+                    train_sizes, train_scores, test_scores = learning_curve(self._models[model], self.X_train, self.y_train, cv=5, scoring='r2')
+                self.target.analysis_results[f"{model}_learning_curve"] = (train_sizes, train_scores, test_scores)
+                logger.info(f"Learning curve for {model} plotted successfully")
+            logger.info("Learning_curve completed successfully")
+        except Exception as e:
+            self.cancel(reason=f"Error in learning_curve: {e}")
 
     def run(self):
         """
         This function is used to run the model optimization.
         """
         try:
-            self.check_data()
+            self._data = self.target.update_data()
             logger.info("Running ModelOptimization")
             for model in self.pipeline:
                 logger.info(f"Running model optimization for {model}")

@@ -66,20 +66,6 @@ def emergency_logger(func):
             raise
     return wrapper
 
-def log_results(func):
-    @functools.wraps(func)
-    def wrapper_log_results(*args, **kwargs):
-        try:
-            result = func(*args, **kwargs)
-            if result:
-                result_logger.info(f"Results for {func.__name__} in {args[0].__class__.__name__}:\n")
-                for key, value in result.items():
-                    result_logger.info(f"{key}:\n{value}")
-            return result
-        except Exception as e:
-            logger.error(f"Error in {func.__name__}: {e}", exc_info=True)
-    return wrapper_log_results
-
 @emergency_logger
 def resolve_path(path: str | Path) -> Path:
     """
