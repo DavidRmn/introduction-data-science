@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from idstools._config import _logging
 
-def setup_logging(module_name, env_name: str = None, step_name: str = None, filename: str = None) -> logging.Logger:
+def setup_logging(module_name, env_name: str = "default", step_name: str = "default", filename: str = "default") -> logging.Logger:
     """
     This function sets up the logging configuration for the module.
     
