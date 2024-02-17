@@ -5,7 +5,7 @@ from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
-from idstools._helpers import use_decorator, emergency_logger, setup_logging, write_data, result_logger
+from idstools._helpers import use_decorator, emergency_logger, setup_logging, write_data
 
 logger = setup_logging(__name__)
 
@@ -100,6 +100,7 @@ class DataPreparation():
     def __init__(self, target: TargetData, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
+            self.result_logger = setup_logging("results", env_name=target.env_name, step_name=target.step_name, filename="DataPreparation")
 
             # Initialize class variables
             self._pipeline = None
@@ -109,6 +110,8 @@ class DataPreparation():
             self.target = target
             self._data = self.target.update_data()
             logger.info(f"Data loaded from {self.target.input_path}.")
+            self.output_path = self.target.output_path / self.target.env_name / self.target.step_name
+            self.output_path.mkdir(parents=True, exist_ok=True)
 
             if not pipeline:
                 self.pipeline = {}
@@ -126,7 +129,7 @@ class DataPreparation():
             for transformer in pipeline:
                 self._pipeline.set_params(**{transformer: eval(transformer)(config=pipeline[transformer])})
             logger.info(f"Pipeline created.")
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} Pipeline created:\n{pprint_dynaconf(pipeline)}")
+            self.result_logger.info(f"Pipeline created:\n{pprint_dynaconf(pipeline)}")
         except Exception as e:
             logger.error(f"Error in build_pipeline: {e}")
 
@@ -137,13 +140,13 @@ class DataPreparation():
                 self._processed_data = self._pipeline.named_steps[transformer].transform(self._processed_data)
                 logger.info(f"Pipeline step {transformer} has been processed.")
             self.target.processed_data = self._processed_data
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} Processed data:\n{self.target.processed_data.head().T}")
+            self.result_logger.info(f"Processed data:\n{self.target.processed_data.head().T}")
         except Exception as e:
             logger.error(f"Error in run_pipeline: {e}")
 
     def write_data(self):
         try:
-            path = self.target.output_path / f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_processed.csv"
+            path = self.output_path / f"{self.target.filename}_processed.csv"
             write_data(data=self.target.processed_data, output_path=path)
             logger.info(f"Processed data written to {path}.")
         except Exception as e:

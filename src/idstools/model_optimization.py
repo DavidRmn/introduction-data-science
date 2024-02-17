@@ -6,7 +6,7 @@ from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import TimeSeriesSplit, train_test_split, learning_curve, LearningCurveDisplay
 from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
-from idstools._helpers import emergency_logger, setup_logging, result_logger
+from idstools._helpers import emergency_logger, setup_logging
 
 logger = setup_logging(__name__)
 
@@ -16,7 +16,8 @@ class ModelOptimization():
     def __init__(self, target: TargetData, pipeline: dict = None):
         try:
             logger.info("Initializing ModelOptimization")
-
+            self.result_logger = setup_logging("results", env_name=target.env_name, step_name=target.step_name, filename="ModelOptimization")
+            
             # initialize variables
             self._models = {}
             self.X_train = None
@@ -29,7 +30,10 @@ class ModelOptimization():
             # load data
             self.target = target
             self._data = self.target.update_data()
+            self.target.analysis_results[self.target.env_name] = {self.target.step_name: {"ModelOptimization": {}}}
             logger.info(f"Data loaded from {target.input_path}.")
+            self.output_path = self.target.output_path / self.target.env_name / self.target.step_name
+            self.output_path.mkdir(parents=True, exist_ok=True)
 
             if not pipeline:
                 self.pipeline = {}
@@ -137,9 +141,9 @@ class ModelOptimization():
                 r2 = r2_score(self.y_test, prediction).round(2)
                 self.target.analysis_results[f"{model}_r2"] = r2
                 adjusted_r2 = self.calculate_adjusted_r_squared(r2, len(self.y_test), len(self.X_test.columns))
-                self.target.analysis_results[f"{model}_adjusted_r2"] = adjusted_r2
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_adjusted_r2"] = adjusted_r2
                 mae = mean_absolute_error(self.y_test, prediction).round(2)
-                self.target.analysis_results[f"{model}_mae"] = mae
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_mae"] = mae
                 logger.info(f"R2 score for {model}: {r2}")
                 logger.info(f"Adjusted R2 score for {model}: {adjusted_r2}")
                 logger.info(f"Mean Absolute Error for {model}: {mae}")
@@ -172,10 +176,10 @@ class ModelOptimization():
             for model in self._models:
                 logger.info(f"Residual analysis for {model}")
                 prediction = self._models[model].predict(self.X_test)
-                self.target.analysis_results[f"{model}_prediction"] = prediction
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_prediction"] = prediction
                 residuals = self.y_test - prediction
                 logger.info(f"Residuals for {model} completed successfully")
-                self.target.analysis_results[f"{model}_residuals"] = residuals
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_residuals"] = residuals
                 logger.info(f"Residual analysis for {model} completed successfully")
             logger.info("Residual analysis completed successfully")
         except Exception as e:
@@ -190,12 +194,12 @@ class ModelOptimization():
             logger.info("Running plot_residuals")
             for model in self._models:
                 logger.info(f"Plotting residuals for {model}")
-                residuals = self.target.analysis_results[f"{model}_residuals"]
-                prediction = self.target.analysis_results[f"{model}_prediction"]
+                residuals = self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_residuals"]
+                prediction = self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_prediction"]
                 residuals = residplot(x=prediction, y=residuals)
                 residuals.set(xlabel='Fitted values', ylabel='Residuals')
                 residuals.set_title(f"Residuals for {model}")
-                self.target.analysis_results[f"{model}_residuals_plot"] = residuals
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_residuals_plot"] = residuals
                 if save:
                     residuals.get_figure().savefig(f"{self.target.output_path}/residuals_{model}.png")
                 logger.info(f"Residuals for {model} plotted successfully")
@@ -216,7 +220,7 @@ class ModelOptimization():
                     feature_importance = self._models[model].coef_
                 else:
                     feature_importance = self._models[model].feature_importances_
-                self.target.analysis_results[f"{model}_feature_importance"] = feature_importance
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_feature_importance"] = feature_importance
                 logger.info(f"Feature importance for {model} completed successfully")
             logger.info("Feature importance completed successfully")
         except Exception as e:
@@ -231,7 +235,7 @@ class ModelOptimization():
             logger.info("Running plot_feature_importance")
             for model in self._models:
                 logger.info(f"Plotting feature importance for {model}")
-                feature_importance = self.target.analysis_results[f"{model}_feature_importance"]
+                feature_importance = self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_feature_importance"]
                 pd.Series(feature_importance, index=self.X_train.columns).nlargest(10).plot(kind='barh')
                 logger.info(f"Feature importance for {model} plotted successfully")
             logger.info("Plot_feature_importance completed successfully")
@@ -253,7 +257,7 @@ class ModelOptimization():
                     display.plot()
                 else:
                     train_sizes, train_scores, test_scores = learning_curve(self._models[model], self.X_train, self.y_train, cv=5, scoring='r2')
-                self.target.analysis_results[f"{model}_learning_curve"] = (train_sizes, train_scores, test_scores)
+                self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_learning_curve"] = (train_sizes, train_scores, test_scores)
                 logger.info(f"Learning curve for {model} plotted successfully")
             logger.info("Learning_curve completed successfully")
         except Exception as e:

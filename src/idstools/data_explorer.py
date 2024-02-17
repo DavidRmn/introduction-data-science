@@ -11,7 +11,7 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 from idstools._data_models import TargetData
 from idstools._config import pprint_dynaconf
-from idstools._helpers import use_decorator, emergency_logger, setup_logging, result_logger
+from idstools._helpers import use_decorator, emergency_logger, setup_logging
 
 pd.set_option('display.precision', 2)
 logger = setup_logging(__name__)
@@ -39,6 +39,7 @@ class DataExplorer():
     def __init__(self, target: TargetData, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
+            self.result_logger = setup_logging("results", env_name=target.env_name, step_name=target.step_name, filename="DataExplorer")
 
             # Initialize class variables
             self._data = pd.DataFrame()
@@ -56,7 +57,10 @@ class DataExplorer():
             # Load data
             self.target = target
             self._data = self.target.update_data()
+            self.target.analysis_results[self.target.env_name] = {self.target.step_name: {"DataExplorer": {}}}
             logger.info(f"Data loaded from {self.target.input_path}.")
+            self.output_path = self.target.output_path / self.target.env_name / self.target.step_name
+            self.output_path.mkdir(parents=True, exist_ok=True)
 
             if not pipeline:
                 self.pipeline = {}
@@ -68,15 +72,6 @@ class DataExplorer():
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
 
-    def check_data(self):
-        """Check if data is available."""
-        try:
-            if not self.target.processed_data.empty:
-                self._data = self.target.processed_data.copy()
-                logger.info(f"Processed data loaded from {self.target.input_path}.")
-        except Exception as e:
-            self.cancel(reason=f"Error in check_data: {e}")
-
     def descriptive_analysis(self):
         """
         Generates descriptive statistics for the dataset.
@@ -85,29 +80,29 @@ class DataExplorer():
         """
         try:
             self._data = self.target.update_data()
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"] = {"descriptive_analysis": {}}
             self.head = self._data.head().T
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_head"] = self.head
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} HEAD:\n{self.head}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["descriptive_analysis"]["head"] = self.head
+            self.result_logger.info(f"HEAD:\n{self.head}")
 
             buffer = io.StringIO()
             self._data.info(buf=buffer)
             self.info = buffer.getvalue()
             buffer.close()
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_info"] = self.info
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} INFO:\n{self.info}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["descriptive_analysis"]["info"] = self.info
+            self.result_logger.info(f"INFO:\n{self.info}")
             
             self.dtypes = self._data.dtypes
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_dtypes"] = self.dtypes
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} DTYPES:\n{self.dtypes}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["descriptive_analysis"]["dtypes"] = self.dtypes
+            self.result_logger.info(f"DTYPES:\n{self.dtypes}")
             
             self.describe = self._data.describe().T
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_describe"] = self.describe
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} DESCRIBE:\n{self.describe}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["descriptive_analysis"]["describe"] = self.describe
+            self.result_logger.info(f"DESCRIBE:\n{self.describe}")
 
             self.isnull = self._data.isnull().sum()
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_isnull"] = self.isnull
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} ISNULL:\n{self.isnull}")
-
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["descriptive_analysis"]["isnull"] = self.isnull
+            self.result_logger.info(f"ISNULL:\n{self.isnull}")
         except Exception as e:
             logger.error(f"Error in descriptive_analysis: {e}")
 
@@ -126,20 +121,21 @@ class DataExplorer():
         """
         try:
             self._data = self.target.update_data()
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"] = {"calculate_correlation": {}}
             method = kwargs.get('method', 'pearson')
             self.correlation = self._data.select_dtypes(include=['float64', 'int64']).corr(*args, **kwargs)[self.target.label].abs()
             self.correlation = self.correlation.sort_values(ascending=False)
             self.correlation = self.correlation[self.correlation <= 1]
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_correlation"] = self.correlation
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["calculate_correlation"][f"{method}_correlation"] = self.correlation
             self.weak_correlation = self.correlation[self.correlation < 0.1]
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_weak_correlation"] = self.weak_correlation
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["calculate_correlation"][f"{method}_weak_correlation"] = self.weak_correlation
             self.moderate_correlation = self.correlation[(self.correlation >= 0.1) & (self.correlation < 0.5)]
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_moderate_correlation"] = self.moderate_correlation
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["calculate_correlation"][f"{method}_moderate_correlation"] = self.moderate_correlation
             self.strong_correlation = self.correlation[self.correlation >= 0.5]
-            self.target.analysis_results[f"{self.target.env_name}_{self.target.step_name}_{method}_strong_correlation"] = self.strong_correlation
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} STRONG CORRELATION:{self.strong_correlation}")
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} MEDIUM CORRELATION:{self.moderate_correlation}")
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} WEAK CORRELATION:\n{self.weak_correlation}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["calculate_correlation"][f"{method}_strong_correlation"] = self.strong_correlation
+            self.result_logger.info(f"STRONG CORRELATION:\n{self.strong_correlation}")
+            self.result_logger.info(f"MEDIUM CORRELATION:\n{self.moderate_correlation}")
+            self.result_logger.info(f"WEAK CORRELATION:\n{self.weak_correlation}")
         except Exception as e:
             logger.error(f"Error in calculate_correration: {e}")
 
@@ -176,8 +172,8 @@ class DataExplorer():
                 for warning in w:
                     logger.warning(f"VIF warning: {warning.message}")
                 
-            self.target.analysis_results["vif"] = vif
-            result_logger.info(f"ENV:{self.target.env_name} STEP:{self.target.step_name} VIF calculation completed:\n{vif}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["vif"] = vif
+            self.result_logger.info(f"VIF calculation completed:\n{vif}")
         except Exception as e:
             logger.error(f"Error in variance_inflation_factor method: {e}")
 
@@ -193,11 +189,11 @@ class DataExplorer():
             save (bool): Whether to save the plot.
         """
         try:
-            self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"] = plt.figure(figsize=(16, 9))
+            self.figures[f"{self.target.filename}_{plotname}"] = plt.figure(figsize=(16, 9))
             lambda_func(self._data)
             if save:
-                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}.png")
-            plt.close(self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"])
+                plt.savefig(self.output_path / f"{self.target.filename}_{plotname}.png")
+            plt.close(self.figures[f"{self.target.filename}_{plotname}"])
         except Exception as e:
             logger.error(f"Error in _generate_plot: {e}")
 
@@ -230,7 +226,7 @@ class DataExplorer():
 
             plt.tight_layout()
             if save:
-                plt.savefig(self.target.output_path / f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}.png")
+                plt.savefig(self.output_path / f"{self.target.filename}_{plotname}.png")
             plt.close(self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"])
         except Exception as e:
             logger.error(f"Error in _generate_subplot: {e}")

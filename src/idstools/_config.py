@@ -52,7 +52,7 @@ def load_config(config_file: str = None):
     - A configured PrettyDynaconf object.
     """
     if config_file is None:
-        config_file = str(config_root / "idstools" / "config.yml")
+        config_file = str(config_root / "idstools" / "config.yaml")
     else:
         config_file = str(config_file)
 
@@ -67,7 +67,7 @@ def load_config(config_file: str = None):
 _template = PrettyDynaconf(
     envvar_prefix='IDSTOOLS',
     settings_files=[
-        str(config_root / "idstools" / "template.yml"),
+        str(config_root / "idstools" / "template.yaml"),
     ]
     )
 
@@ -75,6 +75,6 @@ _logging = PrettyDynaconf(
     envvar_prefix='LOGGING',
     root_path=str(config_root),
     settings_files=[
-        'logging/config.yml',
+        'logging/config.yaml',
         ]
 )

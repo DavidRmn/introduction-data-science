@@ -5,7 +5,7 @@ import pandas as pd
 from pathlib import Path
 from idstools._config import _logging
 
-def setup_logging(module_name) -> logging.Logger:
+def setup_logging(module_name, env_name: str = None, step_name: str = None, filename: str = None) -> logging.Logger:
     """
     This function sets up the logging configuration for the module.
     
@@ -16,11 +16,12 @@ def setup_logging(module_name) -> logging.Logger:
     """
     logfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / "idstools.log"
     _logging.default.handlers.file_handler.filename = str(logfile_path)
-
-    resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / f"analysis_results.log"
-    _logging.default.handlers.resultfile_handler.filename = str(resultfile_path)
-    
     logfile_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if env_name and step_name and filename:
+        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}_results.log"
+        _logging.default.handlers.resultfile_handler.filename = str(resultfile_path)
+        resultfile_path.parent.mkdir(parents=True, exist_ok=True)
 
     logging.config.dictConfig(_logging.default.to_dict())
 
@@ -28,8 +29,6 @@ def setup_logging(module_name) -> logging.Logger:
     return logger
 
 logger = setup_logging(__name__)
-result_logger = setup_logging('results')
-
 
 def use_decorator(*decorators):
     """

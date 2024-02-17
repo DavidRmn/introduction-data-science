@@ -8,7 +8,7 @@ def main():
     parser.add_argument(
         "--config",
         help="Path to the configuration file.",
-        default="idstools/config.yml"
+        default="idstools/config.yaml"
     )
     args = parser.parse_args()
     config = load_config(args.config)

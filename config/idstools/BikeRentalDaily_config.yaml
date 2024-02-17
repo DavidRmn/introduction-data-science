@@ -12,12 +12,13 @@ Task1:
     data_explorer:
       DataExplorer:
         pipeline:
+          descriptive_analysis: true
           missing_value_analysis: true
           outlier_analysis: true
           distribution_analysis: true
           scatter_analysis: true
           correlation_analysis: true
-          time_series_analysis: true
+          calculate_correlation: true
 
 Task2:
   Linear_Regression_Data:
