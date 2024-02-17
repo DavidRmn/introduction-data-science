@@ -8,7 +8,15 @@ from IPython.display import display, Markdown
 config_root = Path(__file__).parent.parent.parent / "config"
 
 def to_plain_dict(obj):
-    """Recursively convert Box objects and other iterables to plain dictionaries."""
+    """
+    Recursively convert Box objects and other iterables to plain dictionaries.
+    
+    Args:
+        obj: The object to convert to a plain dictionary.
+    
+    Returns:
+        dict: The plain dictionary representation of the object.
+    """
     if isinstance(obj, Box):
         # Convert Box to dict and recursively process its items
         return {k: to_plain_dict(v) for k, v in obj.items()}
@@ -23,7 +31,16 @@ def to_plain_dict(obj):
         return obj
 
 def pprint_dynaconf(dynaconf, notebook=False):
-    """Convert Dynaconf or Box objects to plain dict and dump as YAML."""
+    """
+    Convert Dynaconf or Box objects to plain dict and dump as YAML.
+    
+    Args:
+        dynaconf (Dynaconf): The Dynaconf object to pretty-print.
+        notebook (bool): Whether to display the output in a Jupyter notebook.
+    
+    Returns:
+        str: The formatted YAML string if notebook is False.
+    """
     try:
         settings_dict = dynaconf.as_dict()
     except AttributeError:
@@ -37,19 +54,28 @@ def pprint_dynaconf(dynaconf, notebook=False):
         return formatted_yaml
     
 class PrettyDynaconf(Dynaconf):
-    """A Dynaconf subclass that pretty-prints its configuration."""
+    """
+    A Dynaconf subclass that pretty-prints its configuration.
+    
+    Args:
+        Dynaconf: The Dynaconf class to subclass.
+
+    Returns:
+        PrettyDynaconf: A PrettyDynaconf object with the specified settings.
+    """
     def _repr_markdown_(self):
+        """Pretty-print the configuration as Markdown."""
         pprint_dynaconf(self, notebook=True)   
 
 def load_config(config_file: str = None):
     """
     Initializes and returns a PrettyDynaconf object with specified settings.
 
-    Parameters:
-    - config_root: The root path where the configuration files are located.
+    Args:
+        config_file (str): The path to the configuration file.
 
     Returns:
-    - A configured PrettyDynaconf object.
+        PrettyDynaconf: A PrettyDynaconf object with the specified settings.
     """
     if config_file is None:
         config_file = str(config_root / "idstools" / "config.yaml")

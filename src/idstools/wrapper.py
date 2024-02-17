@@ -9,21 +9,33 @@ class Wrapper:
     """
     Wrapper class for executing multiple environments and modules.
     
+    This class is used to process multiple environments and their modules.\n
+    It reads the configuration and prepares the classes and modules for execution.\n
+    It then processes the modules in the steps of the environments.
+
     Args:
         config (PrettyDynaconf): Configuration object.
 
     Attributes:
         config (PrettyDynaconf): Configuration object.
+
         current_target (None): Placeholder for current TargetData instance.
+        
         environments (dict): Dictionary of environments and their steps.
     
     Methods:
         _prepare_classes: Prepare modules from configuration.
+
         _prepare_modules: Prepare environment from configuration.
+        
         _prepare_environments: Prepare configuration for the wrapper.
+        
         _instantiate_and_run_class: Instantiate and run a class.
+        
         _process_modules: Processing modules in a step.
+        
         _process_steps: Process steps in an environment.
+        
         run: Process all environments and their modules.
     """
     def __init__(self, config: PrettyDynaconf):
@@ -156,6 +168,8 @@ class Wrapper:
     def run(self):
         """
         Process all environments and their modules.
+
+        This method gets invoked from external code to start the processing of all environments and their modules.
         """
         logger.info("Start processing of environments.")
         for env_name, steps in tqdm(self.environments.items(), desc="Environments"):

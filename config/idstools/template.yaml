@@ -1,3 +1,6 @@
+"""
+Ths file contains the default configuration settings for the IDSTools package.
+"""
 # Configuration file for the IDSTools package.
 # This file contains settings for various modules like data exploration, data preparation, and model optimization.
 default:
