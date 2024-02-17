@@ -25,11 +25,11 @@ def main():
     parser.add_argument(
         "-config",
         help="Path to the configuration file.",
-        default="idstools/config.yaml"
+        default="idstools/config.yaml",
     )
     parser.add_argument(
         "-clear-results",
-        help="Clear the results directory before running the pipeline.",
+        help="(True/False) Wether to clear the results directory before running the pipeline.",
         default=False,
     )
     args = parser.parse_args()
