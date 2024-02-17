@@ -1,80 +1,264 @@
-# IDSTools Package Configuration Documentation
+# idstools Package Configuration Documentation
 
-This documentation provides a comprehensive overview of the default configuration settings for the IDSTools package. The IDSTools package is designed to facilitate various stages of a data science project, including data exploration, data preparation, and model optimization.
+This documentation details the configuration file structure for the `idstools` package. The configuration file allows users to specify different environments and steps within those environments, catering to various data science tasks such as data exploration, preparation, and model optimization.
 
-## Default Configuration
+## General Structure
 
-The default configuration is structured into three main modules:
+The configuration file is structured into multiple levels:
 
-1. **Data Exploration**
-2. **Data Preparation**
-3. **Model Optimization**
+- **Environments**: Define different settings and steps for specific tasks (e.g., regression, classification).
+- **Steps**: Within each environment, steps are defined to carry out specific processes (e.g., data exploration, transformation).
+- **Objects**: Reference specific modules and functions to be executed in steps.
 
-Each module is configurable to suit different datasets and project requirements.
+### Default Environment
 
-### 1. Data Exploration Module
+The `default` key defines the mandatory default environment. It is used as a baseline for defining the `TargetData` object and can be extended or overridden by other environments.
 
-The `data_explorer` section configures the `DataExplorer` class, which is responsible for the initial analysis of the dataset.
+#### TargetData Object
 
-#### Configuration Options:
+- **Purpose**: Serves as the foundation for executing subsequent environments or steps.
+- **Configuration**:
+  - `input_path`: Specifies the path to the input data.
+  - `input_delimiter`: Defines the delimiter used in the input file.
+  - `output_path`: Sets the path for saving output data.
+  - `label`: Names the label column in the dataset.
+  - `index`: Identifies the index column in the dataset.
+  - `features`: Lists the features to be used from the data.
 
-- `target_data`: Reference to the `_idstools_data` object containing the dataset.
-- `label`: Target variable for analysis.
-- `index`: Index column for the dataset.
-- `input_path`: Path to the input data file.
-- `input_delimiter`: Delimiter used in the input file.
-- `output_path`: Output path for saving results. If null, results are not saved to a file.
+## Example
 
-#### Pipeline:
+```yaml
+"""
+This is an example configuration file for the idstools package.
+"""
+default:
+"""
+On this level you can define different environments.
+The 'default' is a mandatory special key that is used to define the default environment.
+You can use the 'default' environment e.g. to define the 'TargetData' object used with this configuration.
 
-The pipeline allows enabling or disabling various analyses:
+Each environment must have a unique key.
+The key is used to reference the environment in the different steps of the pipeline.
+In the results directory, the results of the different environments are stored in a separate directory.
 
-- `descriptive_analysis`: Enables analysis of basic descriptive statistics (mean, median, etc.).
-- `missing_value_analysis`: Enables analysis of missing values in the dataset.
-- `correlation_analysis`: Enables analysis of feature correlations.
-- `outlier_analysis`: Enables detection and analysis of outliers.
-- `distribution_analysis`: Enables analysis of feature distributions.
-- `scatter_analysis`: Enables scatter plot analysis for feature relationships.
+The individual environments could also have their own 'TargetData' object or even multiple of them.
+The 'TargetData' object is used to execute all following environemnts and/or steps either until everything has been processed or until a new 'TargetData' object is defined.
+"""
+  TargetData:
+  """
+  On this level you can define individual steps of the environment.
 
-### 2. Data Preparation Module
+  Each step must have a unique key.
+  The key is used to reference the step in the different steps of the pipeline.
+  In the results directory, the results of the different steps are stored in a separate directory.
+  """
+    _objects:
+    """
+    On this level you create a reference to the module and the function that should be executed.
+    The module and the function must be importable from the python environment.
 
-The `data_preparation` section configures the `DataPreparation` class for preprocessing the dataset.
+    '_objects' references to the idstools._objects module.
+    """
+      Target:
+      """
+      This is the name of the object that is used to execute the function.
+      """
+        """
+        This is the key value pair that is used to define the input path for the data.
+        """
+        input_path:
+        
+        """
+        This is the key value pair that is used to define the delimiter for the input data.
+        """
+        input_delimiter:
 
-#### Configuration Options:
+        """
+        This is the key value pair that is used to define the output path for the data.
+        """
+        output_path:
 
-Similar to the Data Explorer module, with additional options for the data preparation pipeline including data imputation, encoding, and feature selection.
+        """
+        This is the key value pair that is used to define the label for the data.
+        """
+        label:
 
-#### Pipeline:
+        """
+        This is the key value pair that is used to define the index for the data.
+        """
+        index:
 
-- `_SimpleImputer`: Configures missing value imputation.
-- `_OneHotEncoder`: Configures one-hot encoding for categorical variables.
-- `_FeatureDropper`: Allows dropping specific features.
-- `_CustomTransformer`: Applies custom transformations to the dataset.
+        """
+        This is the key value pair that is used to define the features for the data.
+        """
+        features: []
 
-### 3. Model Optimization Module
+"""
+Now you can either continue to define the next steps of the default environment or you can define a new environment.
 
-The `model_optimization` section is used for tuning and evaluating models.
+e.g. if the data should be preprocessed in a specific way for a specific task, you can define a new environment for this task.
 
-#### Configuration Options:
+Assume you want to preprocess the data for a regression task, you can define a new environment for this task.
+Another environment could be defined for a classification task.
 
-- `target_data`: Reference to the `_idstools_data` object.
-- `input_path`: Path to the input data file.
-- `input_delimiter`: Delimiter used in the input file.
-- `output_path`: Path for saving optimization results.
+Following the example, we define a new environment for the regression task.
+"""
 
-#### Evaluation:
+"""Name of the regression environment."""
+regression:
+  """Fist step of the regression environment."""
+  01_Exploration:
+    """Name of the module that contains the class and the function that should be executed."""
+    data_explorer:
+      """Name of the class that should be executed."""
+      DataExplorer:
+        """Configuration of the pipeline."""
+        pipeline:
+          """Name of the functions that should be executed."""
+          descriptive_analysis: true
+          missing_value_analysis: true
+          outlier_analysis: true
+          distribution_analysis: true
+          scatter_analysis: true
+          correlation_analysis: true
+          calculate_correlation: true
 
-- `metric`: Metric for model evaluation, such as Root Mean Squared Error.
-- `cv`: Number of folds for cross-validation.
+  """Second step of the regression environment."""
+  02_Transform_dteday_to_datetime:
+    """Name of the module that contains the class and the function that should be executed."""
+    data_preparation:
+      """Name of the class that should be executed."""
+      DataPreparation:
+        """Configuration of the pipeline."""
+        pipeline:
+          """
+          Name of the functions that should be executed.
+          
+          The '_CustomTransformer' is a special key that is used to execute a custom transformer.
+          The 'func' key is used to define the name of the function that should be executed.
+          The 'module' key is used to define the name of the module that contains the function.
+          The 'config' key is used to define the configuration of the function.
 
-## TargetData Configuration
+          The 'target' key is used to define the target column that should be transformed.
+          The 'format' key is used to define the format of the target column.
 
-This is a special configuration under the default settings, which specifies the dataset details.
+          The 'target_to_datetime' function is a custom transformer that is used to transform a target column to a datetime column.
+          You can find the implementation of the function in the idstools._transformer module.
+          You can add your own custom transformers to the idstools._transformer module.
+          """
+          _CustomTransformer:
+            - func: target_to_datetime
+              module: idstools._transformer
+              config:
+                target: dteday
+                format: "%d.%m.%Y"
+  
+  """Third step of the regression environment."""
+  03_Time_Series_Analysis:
+    """Name of the module that contains the class and the function that should be executed."""
+    data_explorer:
+      """Name of the class that should be executed."""
+      DataExplorer:
+        """Configuration of the pipeline."""
+        pipeline:
+          """
+          Name of the functions that should be executed.
+          
+          Now that the target column has been transformed to a datetime column, we can execute the time series analysis.
 
-- `input_path`: Path to the dataset.
-- `input_delimiter`: Delimiter used in the dataset.
-- `output_path`: Path for saving any output.
-- `label`: Name of the target variable.
-- `index`: Column used as the dataset index.
+          The 'time_series_analysis' function is used to execute the time series analysis.
+          """
+          time_series_analysis: true
 
-This configuration serves as the basis for dataset handling across various modules of the IDSTools package.
+  """Fourth step of the regression environment."""
+  04_Baseline_Regression_Preprocessing:
+    """Name of the module that contains the class and the function that should be executed."""
+    data_preparation:
+      """Name of the class that should be executed."""
+      DataPreparation:
+        """Configuration of the pipeline."""
+        pipeline:
+          """
+          Name of the functions that should be executed.
+          
+          The '_SimpleImputer' is a special key that is used to execute a simple imputer.
+          The 'target' key is used to define the target column that should be imputed.
+          The 'config' key is used to define the configuration of the imputer.
+
+          The 'hum' column is imputed with the mean value.
+          The 'season' column is imputed with the mean value.
+          """
+          _SimpleImputer:
+            - target: hum
+              config:
+                strategy: "mean"
+            - target: season
+              config:
+                strategy: "mean"
+
+  """Fifth step of the regression environment."""
+  05_Baseline_Regression_Model:
+    """Name of the module that contains the class and the function that should be executed."""
+    model_optimization:
+      """Name of the class that should be executed."""
+      ModelOptimization:
+        """Configuration of the pipeline."""
+        pipeline:
+          """
+          Name of the functions that should be executed.
+          
+          The 'train_test_split' function is used to split the data into a training and a test set.
+          The 'linear_regression' function is used to execute the linear regression model.
+          The 'validation' function is used to validate the model.
+          """
+          train_test_split: true
+          linear_regression: true
+          validation: true
+```
+
+### Regression Environment
+
+This example environment is configured for a regression task, showcasing the flexibility of the configuration file to cater to specific data science tasks.
+
+#### 01_Exploration Step
+
+- **Module**: `data_explorer`
+- **Class**: `DataExplorer`
+- **Pipeline Configuration**:
+  - Enables various analyses such as descriptive, missing value, outlier, distribution, scatter, and correlation analysis.
+  - Specifically includes a function to calculate correlations.
+
+#### 02_Transform_dteday_to_datetime Step
+
+- **Module**: `data_preparation`
+- **Class**: `DataPreparation`
+- **Pipeline Configuration**:
+  - Uses a `_CustomTransformer` to convert the `dteday` column to datetime format.
+  - Configuration specifies the target column and the format for conversion.
+
+#### 03_Time_Series_Analysis Step
+
+- **Module**: `data_explorer`
+- **Class**: `DataExplorer`
+- **Pipeline Configuration**:
+  - Executes time series analysis now that the target column is in datetime format.
+
+#### 04_Baseline_Regression_Preprocessing Step
+
+- **Module**: `data_preparation`
+- **Class**: `DataPreparation`
+- **Pipeline Configuration**:
+  - Implements `_SimpleImputer` for imputing missing values in `hum` and `season` columns using the mean strategy.
+
+#### 05_Baseline_Regression_Model Step
+
+- **Module**: `model_optimization`
+- **Class**: `ModelOptimization`
+- **Pipeline Configuration**:
+  - Configures the pipeline to split data into training and test sets, execute a linear regression model, and validate the model.
+
+## Configuring New Environments
+
+Following the example structure, users can define new environments tailored to specific tasks, such as classification, by specifying unique keys and configuring steps according to the task requirements.
+
+This configuration file structure demonstrates the `idstools` package's capability to adapt to various data processing, analysis, and modeling tasks through a flexible and comprehensive setup.
