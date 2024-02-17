@@ -99,8 +99,8 @@ class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
     def __init__(self, target: TargetData, pipeline: dict = None):
         try:
-            logger.info("Initializing DataExplorer")
-            self.result_logger = setup_logging("results", env_name=target.env_name, step_name=target.step_name, filename="DataPreparation")
+            logger.info("Initializing DataPreparation.")
+            self.result_logger = setup_logging("data_preparation_results", env_name=target.env_name, step_name=target.step_name, filename="DataPreparation")
 
             # Initialize class variables
             self._pipeline = None

@@ -16,7 +16,7 @@ class ModelOptimization():
     def __init__(self, target: TargetData, pipeline: dict = None):
         try:
             logger.info("Initializing ModelOptimization")
-            self.result_logger = setup_logging("results", env_name=target.env_name, step_name=target.step_name, filename="ModelOptimization")
+            self.result_logger = setup_logging("model_optimization_results", env_name=target.env_name, step_name=target.step_name, filename="ModelOptimization")
             
             # initialize variables
             self._models = {}

@@ -39,7 +39,7 @@ class DataExplorer():
     def __init__(self, target: TargetData, pipeline: dict = None):
         try:
             logger.info("Initializing DataExplorer")
-            self.result_logger = setup_logging("results", env_name=target.env_name, step_name=target.step_name, filename="DataExplorer")
+            self.result_logger = setup_logging("data_explorer_results", env_name=target.env_name, step_name=target.step_name, filename="DataExplorer")
 
             # Initialize class variables
             self._data = pd.DataFrame()
@@ -53,6 +53,7 @@ class DataExplorer():
             self.weak_correlation = None
             self.moderate_correlation = None
             self.strong_correlation = None
+            self.vif = None
 
             # Load data
             self.target = target
@@ -166,14 +167,14 @@ class DataExplorer():
                     vif_records.append({"VIF Factor": vif_value, "features": vif_data.columns[i]})
                 
                 # Convert the list of dictionaries to a DataFrame
-                vif = pd.DataFrame(vif_records)
+                self.vif = pd.DataFrame(vif_records)
                 
                 # Log any warnings captured
                 for warning in w:
                     logger.warning(f"VIF warning: {warning.message}")
                 
-            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["vif"] = vif
-            self.result_logger.info(f"VIF calculation completed:\n{vif}")
+            self.target.analysis_results[self.target.env_name][self.target.step_name]["DataExplorer"]["vif"] = self.vif
+            self.result_logger.info(f"VIF calculation completed:\n{self.vif}")
         except Exception as e:
             logger.error(f"Error in variance_inflation_factor method: {e}")
 
@@ -215,7 +216,7 @@ class DataExplorer():
             num_plots = len(lambdas)
             rows, cols = self._calculate_grid_size(num_plots)
             figsize = (cols * 4, rows * 3)
-            self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"], subplots = plt.subplots(rows, cols, figsize=figsize)
+            self.figures[f"{self.target.filename}_{plotname}"], subplots = plt.subplots(rows, cols, figsize=figsize)
             subplots = subplots.flatten() if num_plots > 1 else [subplots]
 
             for ax, (lambda_func, kwargs) in zip(subplots, lambdas):
@@ -227,7 +228,7 @@ class DataExplorer():
             plt.tight_layout()
             if save:
                 plt.savefig(self.output_path / f"{self.target.filename}_{plotname}.png")
-            plt.close(self.figures[f"{self.target.env_name}_{self.target.step_name}_{self.target.filename}_{plotname}"])
+            plt.close(self.figures[f"{self.target.filename}_{plotname}"])
         except Exception as e:
             logger.error(f"Error in _generate_subplot: {e}")
 
