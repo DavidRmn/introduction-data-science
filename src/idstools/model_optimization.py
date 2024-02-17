@@ -52,7 +52,11 @@ class ModelOptimization():
         try:
             self._data = self.target.update_data()
             logger.info("Running train_test_split")
-            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self._data[self.target.features], self._data[self.target.label], test_size=0.2, random_state=42)
+            if not self.target.label:
+                self.cancel(reason="Target label not provided.")
+            suitable_dtypes = ['int64', 'float64', 'object', 'category']
+            suitable_features = self._data.select_dtypes(include=suitable_dtypes).columns.intersection(self.target.features)
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self._data[suitable_features], self._data[self.target.label], test_size=0.2, random_state=42)
             logger.info("train_test_split completed successfully")
         except Exception as e:
             self.cancel(reason=f"Error in train_test_split: {e}")
@@ -144,9 +148,9 @@ class ModelOptimization():
                 self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_adjusted_r2"] = adjusted_r2
                 mae = mean_absolute_error(self.y_test, prediction).round(2)
                 self.target.analysis_results[self.target.env_name][self.target.step_name]["ModelOptimization"][f"{model}_mae"] = mae
-                logger.info(f"R2 score for {model}: {r2}")
-                logger.info(f"Adjusted R2 score for {model}: {adjusted_r2}")
-                logger.info(f"Mean Absolute Error for {model}: {mae}")
+                self.result_logger.info(f"R2 score for {model}: {r2}")
+                self.result_logger.info(f"Adjusted R2 score for {model}: {adjusted_r2}")
+                self.result_logger.info(f"Mean Absolute Error for {model}: {mae}")
             logger.info("Validation completed successfully")
         except Exception as e:
             self.cancel(reason=f"Error in validation: {e}")

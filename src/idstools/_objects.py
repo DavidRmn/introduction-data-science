@@ -81,7 +81,7 @@ class Target(TargetData):
 
         if not features:
             logger.info(f"No features provided.")
-            self.features = []
+            self.features = self.data.columns.tolist()
         else:
             logger.info(f"Using features: {self.features}")
 
