@@ -3,6 +3,35 @@ from dataclasses import dataclass, field
 
 @dataclass
 class TargetData:
+    """
+    Data class to store the target data
+    
+    Args:
+    data: pd.DataFrame
+        The target data
+    index: str  = None
+        The index column name
+    label: str = None
+        The label column name
+    features: list[str] = None
+        The feature column names
+    input_path: str = None
+        The input path
+    input_delimiter: str = None
+        The input delimiter
+    filename: str = None
+        The filename
+    output_path: str = None
+        The output path
+    env_name: str = None
+        The environment name
+    step_name: str = None
+        The step name
+    processed_data: pd.DataFrame = field(default_factory=pd.DataFrame)
+        The processed data
+    analysis_results: dict = None
+        The analysis results
+    """
     data: pd.DataFrame
     index: str = None
     label: str = None

@@ -12,24 +12,27 @@ class Target(TargetData):
 
     Args:
         input_path (str): The path to the input data.
-        input_delimiter (str): The delimiter used to separate the data.
+        input_delimiter (str): The delimiter of the input data.
         label (str): The label of the target data.
         index (str): The index of the target data.
+        features (list[str]): The features of the target data.
         output_path (str): The path to the output data.
         env_name (str): The name of the environment.
+        step_name (str): The name of the step.
 
     Attributes:
-        data (pandas.DataFrame): The target data.
-        label (str): The label of the target data.
-        filename (str): The name of the file.
         input_path (str): The path to the input data.
-        processed_data (pandas.DataFrame): The processed data.
+        input_delimiter (str): The delimiter of the input data.
+        label (str): The label of the target data.
+        index (str): The index of the target data.
+        features (list[str]): The features of the target data.
         output_path (str): The path to the output data.
         env_name (str): The name of the environment.
-        analysis_results (dict): The results of the analysis.
-
-    Methods:
-        update_data: Update the data attribute with the processed data.  
+        step_name (str): The name of the step.
+        data (pd.DataFrame): The target data.
+        filename (str): The filename of the input data.
+        processed_data (pd.DataFrame): The processed data.
+        analysis_results (dict): The analysis results.  
     """
     def __init__(self,
                  input_path: str,
@@ -81,7 +84,7 @@ class Target(TargetData):
 
         if not features:
             logger.info(f"No features provided.")
-            self.features = []
+            self.features = self.data.columns.tolist()
         else:
             logger.info(f"Using features: {self.features}")
 
@@ -105,7 +108,12 @@ class Target(TargetData):
             logger.info(f"Using step name: {self.step_name}")
     
     def update_data(self) -> pd.DataFrame:
-        """Update the data attribute with the processed data."""
+        """
+        Update the data attribute with the processed data.
+        
+        Returns:
+            pd.DataFrame: The processed data.
+        """
         try:
             if not self.processed_data.empty:
                 self.features = list(set(self.features) & set(self.processed_data.columns.tolist()))

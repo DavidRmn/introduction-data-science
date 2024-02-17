@@ -6,9 +6,10 @@ default:
         input_delimiter: ";"
         index: "instant"
         label: "cnt"
+        features: ['registered', 'temp', 'atemp', 'windspeed', 'season', 'yr', 'mnth', 'weekday', 'weathersit']
 
 Task1:
-  Initial_Exploration:
+  01_Data_Exploration:
     data_explorer:
       DataExplorer:
         pipeline:
@@ -19,79 +20,8 @@ Task1:
           scatter_analysis: true
           correlation_analysis: true
           calculate_correlation: true
-
-Task2:
-  Linear_Regression_Data:
-    _objects:
-      Target:
-        input_path: "data/BikeRentalDaily_train.csv"
-        input_delimiter: ";"
-        index: "instant"
-        label: "cnt"
-        features: ["season", "yr", "mnth", "holiday", "weekday", "workingday", "weathersit", "temp", "atemp", "hum", "windspeed"]
   
-  Linear_Regression_Preprocessing:
-    data_preparation:
-      DataPreparation:
-        pipeline:
-          _FeatureDropper:
-            - target: atemp
-              config:
-                axis: 1
-                errors: "ignore"
-            - target: mnth
-              config:
-                axis: 1
-                errors: "ignore"
-            - target: workingday
-              config:
-                axis: 1
-                errors: "ignore"
-            - target: casual
-              config:
-                axis: 1
-                errors: "ignore"
-          _NaNDropper:
-            - target: hum
-              config:
-                axis: 1
-                errors: "ignore"
-            - target: season
-              config:
-                axis: 1
-                errors: "ignore"
-
-    data_explorer:
-      DataExplorer:
-        pipeline:
-          correlation_analysis: true
-
-  Random_Forest_Preprocessing:
-    data_preparation:
-      DataPreparation:
-        pipeline:
-          _FeatureDropper:
-            - target: atemp
-              config:
-                axis: 1
-                errors: "ignore"
-          _NaNDropper:
-            - target: hum
-              config:
-                axis: 1
-                errors: "ignore"
-            - target: season
-              config:
-                axis: 1
-                errors: "ignore"
-                
-    data_explorer:
-      DataExplorer:
-        pipeline:
-          correlation_analysis: true
-
-Task3:
-  Transform_dteday_to_datetime:
+  02_Transform_dteday_to_datetime:
     data_preparation:
       DataPreparation:
         pipeline:
@@ -101,8 +31,35 @@ Task3:
               config:
                 target: dteday
                 format: "%d.%m.%Y"
+  
+  03_Time_Series_Analysis:
+    data_explorer:
+      DataExplorer:
+        pipeline:
+          time_series_analysis: true
 
-  Evaluate_Model:
+Task2:  
+  01_Baseline_Regression_Preprocessing:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _SimpleImputer:
+            - target: hum
+              config:
+                strategy: "mean"
+            - target: season
+              config:
+                strategy: "mean"
+  
+  02_Data_Exploration:
+    data_explorer:
+      DataExplorer:
+        pipeline:
+          descriptive_analysis: true
+          missing_value_analysis: true
+          calculate_correlation: true
+
+  03_Baseline_Regression_Model:
     model_optimization:
       ModelOptimization:
         pipeline:
