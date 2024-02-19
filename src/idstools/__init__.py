@@ -28,14 +28,16 @@ def main():
         default="idstools/config.yaml",
     )
     parser.add_argument(
-        "--clear-results",
+        "--clear",
         help="(True/False) Wether to clear the results directory before running the pipeline.",
         default=False,
     )
     args = parser.parse_args()
     config = load_config(args.config)
-    result_path = Path("results").resolve()
-    if result_path.exists() and args.clear_results:
-        shutil.rmtree(result_path)
+    result_path = Path(__file__).parent.parent.parent / "results"
+    if result_path.exists() and args.clear:
+        for item in result_path.iterdir():
+            if item.is_dir():
+                shutil.rmtree(item)
     w = Wrapper(config=config)
     w.run()
