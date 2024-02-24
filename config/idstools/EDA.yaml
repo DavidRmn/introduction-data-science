@@ -40,3 +40,72 @@ default:
           correlation_analysis: true
           calculate_correlation: true
           time_series_analysis: true
+
+
+Task2:
+
+  Drop_NaN_Rows:
+  season
+  hum
+  02_Baseline_Regression_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          linear_regression: true
+          validation: true
+
+  Impute_NaN_Values_Mean:
+  season -> custom(impute by dteday)
+  hum -> mean
+  Model_Validation:
+
+  Impute_NaN_Values_Median:
+  hum -> median
+  Model_Validation:
+
+  Data_Corrections:
+  windspeed -> custom(all values < 0 to NaN)
+
+  Drop_NaN_Rows:
+  windspeed
+  Model_Validation:
+
+  Impute_NaN_Values_Mean:
+  windspeed -> mean
+  Model_Validation:
+
+  Impute_NaN_Values_Median:
+  windspeed -> median
+  Model_Validation:
+
+  Remove_Outlier:
+  hum?
+  Model_Validation:
+
+  One_Hot_Encoding:
+  season?
+  weekday?
+  weathersit?
+  Model_Validation:
+
+
+
+  01_Baseline_Regression_Preprocessing:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _SimpleImputer:
+            - target: hum
+              config:
+                strategy: "mean"
+            - target: season
+              config:
+                strategy: "mean"
+
+  02_Baseline_Regression_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          train_test_split: true
+          linear_regression: true
+          validation: true

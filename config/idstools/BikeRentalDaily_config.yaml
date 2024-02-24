@@ -7,11 +7,21 @@ default:
         index: "instant"
         label: "cnt"
         features: ['registered', 'temp', 'atemp', 'windspeed', 'season', 'yr', 'mnth', 'weekday', 'weathersit']
+  
+  Validation_Data:
+    _objects:
+      Target:
+        input_path: "data/BikeRentalDaily_test.csv"
+        input_delimiter: ";"
+        index: "instant"
+        label: "cnt"
+        features: ['registered', 'temp', 'atemp', 'windspeed', 'season', 'yr', 'mnth', 'weekday', 'weathersit']
 
 Task1:
   01_Data_Exploration:
     data_explorer:
       DataExplorer:
+        target: Target_Data
         pipeline:
           descriptive_analysis: true
           missing_value_analysis: true
@@ -24,6 +34,7 @@ Task1:
   02_Transform_dteday_to_datetime:
     data_preparation:
       DataPreparation:
+        target: Target_Data
         pipeline:
           _CustomTransformer:
             - func: target_to_datetime
@@ -35,76 +46,6 @@ Task1:
   03_Time_Series_Analysis:
     data_explorer:
       DataExplorer:
+        target: Target_Data
         pipeline:
           time_series_analysis: true
-
-Task2:
-
-  Drop_NaN_Rows:
-  season
-  hum
-  Model_Validation:
-
-  Impute_NaN_Values_Mean:
-  season -> custom(impute by dteday)
-  hum -> mean
-  Model_Validation:
-
-  Impute_NaN_Values_Median:
-  hum -> median
-  Model_Validation:
-
-  Data_Corrections:
-  windspeed -> custom(all values < 0 to NaN)
-
-  Drop_NaN_Rows:
-  windspeed
-  Model_Validation:
-
-  Impute_NaN_Values_Mean:
-  windspeed -> mean
-  Model_Validation:
-
-  Impute_NaN_Values_Median:
-  windspeed -> median
-  Model_Validation:
-
-  Remove_Outlier:
-  hum?
-  Model_Validation:
-
-  One_Hot_Encoding:
-  season?
-  weekday?
-  weathersit?
-  Model_Validation:
-
-
-
-  01_Baseline_Regression_Preprocessing:
-    data_preparation:
-      DataPreparation:
-        pipeline:
-          _SimpleImputer:
-            - target: hum
-              config:
-                strategy: "mean"
-            - target: season
-              config:
-                strategy: "mean"
-  
-  02_Data_Exploration:
-    data_explorer:
-      DataExplorer:
-        pipeline:
-          descriptive_analysis: true
-          missing_value_analysis: true
-          calculate_correlation: true
-
-  03_Baseline_Regression_Model:
-    model_optimization:
-      ModelOptimization:
-        pipeline:
-          train_test_split: true
-          linear_regression: true
-          validation: true

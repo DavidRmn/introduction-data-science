@@ -13,7 +13,7 @@ logger = setup_logging(__name__)
 @emergency_logger
 class ModelOptimization():
     """This class is used to optimize the model."""
-    def __init__(self, target: TargetData, pipeline: dict = None):
+    def __init__(self, target: TargetData, validation_target: TargetData = None, pipeline: dict = None):
         try:
             logger.info("Initializing ModelOptimization")
             self.result_logger = setup_logging("model_optimization_results", env_name=target.env_name, step_name=target.step_name, filename="ModelOptimization")
@@ -35,6 +35,14 @@ class ModelOptimization():
             self.output_path = self.target.output_path / self.target.env_name / self.target.step_name
             self.output_path.mkdir(parents=True, exist_ok=True)
 
+            if validation_target:
+                self.validation_target = validation_target
+                self.y_test = self.validation_target.data[self.validation_target.label]
+                self.X_test = self.validation_target.data[self.validation_target.features]
+            else:
+                self.validation_target = None
+                logger.info(f"No validation data provided.")
+
             if not pipeline:
                 self.pipeline = {}
                 logger.info(f"Please provide a pipeline configuration.")
@@ -44,6 +52,8 @@ class ModelOptimization():
 
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
+
+    # ------------------------ Data Splitting Functions ------------------------
 
     def train_test_split(self):
         """
@@ -74,33 +84,7 @@ class ModelOptimization():
         except Exception as e:
             self.cancel(reason=f"Error in train_test_validation_split: {e}")
 
-    def split_on_yearly_basis(self):
-        """
-        This function is used to split the data into training and testing sets on a yearly basis.
-        """
-        try:
-            self._data = self.target.update_data()
-            logger.info("Running split_on_yearly_basis")
-            self.X_train, self.X_test = self._data[self._data['year'] < 2019][self.target.features], self._data[self._data['year'] >= 2019][self.target.features]
-            self.y_train, self.y_test = self._data[self._data['year'] < 2019][self.target.label], self._data[self._data['year'] >= 2019][self.target.label]
-            logger.info("split_on_yearly_basis completed successfully")
-        except Exception as e:
-            self.cancel(reason=f"Error in split_on_yearly_basis: {e}")
-    
-    def time_series_split(self):
-        """
-        This function is used to split the data into training and testing sets.
-        """
-        try:
-            self._data = self.target.update_data()
-            logger.info("Running time_series_split")
-            tscv = TimeSeriesSplit(n_splits=5)
-            for train_index, test_index in tscv.split(self._data):
-                self.X_train, self.X_test = self._data.iloc[train_index][self.target.features], self._data.iloc[test_index][self.target.features]
-                self.y_train, self.y_test = self._data.iloc[train_index][self.target.label], self._data.iloc[test_index][self.target.label]
-                logger.info("time_series_split completed successfully")
-        except Exception as e:
-            self.cancel(reason=f"Error in time_series_split: {e}")
+    # ------------------------ Model Functions ------------------------
 
     def linear_regression(self):
         """
@@ -110,7 +94,6 @@ class ModelOptimization():
             logger.info("Running linear_regression")
             reg = LinearRegression()
             reg.fit(self.X_train, self.y_train)
-            reg.predict(self.X_test)
             self._models['linear_regression'] = reg
             logger.info("linear_regression completed successfully")
         except Exception as e:
@@ -130,9 +113,11 @@ class ModelOptimization():
         except Exception as e:
             self.cancel(reason=f"Error in lazy_regressor: {e}")
 
-    def validation(self):
+    # ------------------------ Model Validation Functions ------------------------
+
+    def validate_models(self):
         """
-        This function is used to validate the model.
+        This function is used to validate the models.
         """
         try:
             self._data = self.target.update_data()

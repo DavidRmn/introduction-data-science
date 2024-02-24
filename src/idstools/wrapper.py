@@ -19,7 +19,7 @@ class Wrapper:
     Attributes:
         config (PrettyDynaconf): Configuration object.
 
-        current_target (None): Placeholder for current TargetData instance.
+        targets (dict): Dictionary of targets.
         
         environments (dict): Dictionary of environments and their steps.
     
@@ -40,7 +40,7 @@ class Wrapper:
     """
     def __init__(self, config: PrettyDynaconf):
         self.config = config
-        self.current_target = None
+        self.targets = {}
         self.environments = self._prepare_environments()
 
     def _prepare_classes(self, env_name, step_config) -> dict:
@@ -98,7 +98,7 @@ class Wrapper:
         logger.info(f"Completed preparation of environments: {list(environments.keys())}")
         return environments
     
-    def _instantiate_and_run_class(self, module_name, class_name, class_config, env_name=None, step_name=None, target=None, is_target=False):
+    def _instantiate_and_run_class(self, module_name, class_name, class_config, env_name=None, step_name=None, targets=None, is_target=False):
         """
         Instantiate and run a class.
         
@@ -108,7 +108,7 @@ class Wrapper:
             class_config (dict): Configuration for the class.
             env_name (str): Name of the environment.
             step_name (str): Name of the step.
-            target (None): Placeholder for current TargetData instance.
+            targets (None): Dictionary of targets.
             is_target (bool): Flag to indicate if the module is TargetData.
         """
         try:
@@ -116,13 +116,13 @@ class Wrapper:
             module_path = f"idstools.{module_name.lower()}"
             module = importlib.import_module(module_path)
             cls = getattr(module, class_name)
-            if is_target is False and target is None:
+            if is_target is False and targets is None:
                 logger.error(f"Error instantiating class {class_name}: No TargetData instance available.")
                 return
             if is_target is False:
-                target.env_name = env_name
-                target.step_name = step_name
-                instance = cls(**class_config, target=target)
+                targets[class_config['Target']].env_name = env_name
+                targets[class_config['Target']].step_name = step_name
+                instance = cls(**class_config)
                 logger.debug(f"Running class {class_name}")
                 instance.run()
                 return
@@ -144,9 +144,9 @@ class Wrapper:
             for module_name, (class_name, class_config) in tqdm(modules.items(), desc=f"Modules in {step_name}"):
                 logger.info(f"Processing module: {module_name}")
                 if class_name == "Target":
-                    self.current_target = self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, step_name=step_name, is_target=True)
+                    self.targets[step_name] = self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, step_name=step_name, is_target=True)
                 else:
-                    self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, step_name=step_name, target=self.current_target)
+                    self._instantiate_and_run_class(module_name=module_name, class_name=class_name, class_config=class_config, env_name=env_name, step_name=step_name, targets=self.targets)
         except Exception as e:
             logger.error(f"Error processing module {module_name} in environment {env_name}: {e}")
             
