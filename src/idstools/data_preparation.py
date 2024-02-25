@@ -20,8 +20,12 @@ class _NaNDropper(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         for element in self.config:
-            X = X.dropna(subset=[element["target"]])
-        return X
+            if element["target"] == []:
+                X = X.dropna(**element["config"])
+                return X
+            for feature in element["target"]:
+                X = X.dropna(subset=[feature], **element["config"])
+            return X
 @use_decorator(emergency_logger)
 class _SimpleImputer(BaseEstimator, TransformerMixin):
     """This class is used to impute NaN values."""
@@ -34,7 +38,8 @@ class _SimpleImputer(BaseEstimator, TransformerMixin):
     def transform(self, X):
         for element in self.config:
             imputer = SimpleImputer(**element["config"])
-            X[element["target"]] = imputer.fit_transform(X[[element["target"]]])
+            for feature in element["target"]:
+                X[feature] = imputer.fit_transform(X[[feature]])
         return X
     
 @use_decorator(emergency_logger)
@@ -64,7 +69,8 @@ class _FeatureDropper(BaseEstimator, TransformerMixin):
     
     def transform(self, X):
         for element in self.config:
-            X = X.drop([element["target"]], **element["config"])
+            for feature in element["target"]:
+                X = X.drop([feature], **element["config"])
         return X
 
 @use_decorator(emergency_logger)
@@ -97,7 +103,7 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
 @use_decorator(emergency_logger)
 class DataPreparation():
     """This class is used to prepare the data for the training of the model."""
-    def __init__(self, target: TargetData, pipeline: dict = None):
+    def __init__(self, target: TargetData, validation_target: TargetData = None, pipeline: dict = None):
         try:
             logger.info("Initializing DataPreparation.")
             self.result_logger = setup_logging("data_preparation_results", env_name=target.env_name, step_name=target.step_name, filename="DataPreparation")

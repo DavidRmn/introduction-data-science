@@ -151,6 +151,7 @@ class DataExplorer():
             self._data = self.target.update_data()
             # Select numeric types only for VIF computation
             vif_data = add_constant(self._data.select_dtypes(include=['float64', 'int64']))
+            vif_data.drop(self.target.label, axis=1, inplace=True)
             
             # Initialize an empty list to store VIF data
             vif_records = []

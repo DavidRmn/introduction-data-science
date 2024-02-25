@@ -1,0 +1,77 @@
+default:
+  Validation_Data:
+    _objects:
+      Target:
+        input_path: "data/BikeRentalDaily_test.csv"
+        input_delimiter: ";"
+        index: "instant"
+        label: "cnt"
+
+  Minimal_Preprocessing:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _NaNDropper:
+            - target: ['hum', 'season']
+              config:
+                axis: 0
+                how: "any"
+          _FeatureDropper:
+            - target: ['casual', 'registered', 'dteday', 'temp']
+              config:
+                axis: 1
+                errors: "ignore"
+
+Task3:
+  Target_Data:
+    _objects:
+      Target:
+        input_path: "data/BikeRentalDaily_train.csv"
+        input_delimiter: ";"
+        index: "instant"
+        label: "cnt"
+
+  Validation_Data:
+    _objects:
+      ValidationTarget:
+        input_path: "results/DEFAULT/Minimal_Preprocessing/BikeRentalDaily_test_processed.csv"
+        label: "cnt"
+
+  Minimal_Preprocessing:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _NaNDropper:
+            - target: ['hum', 'season']
+              config:
+                axis: 0
+                how: "any"
+          _FeatureDropper:
+            - target: ['casual', 'registered', 'dteday', 'temp']
+              config:
+                axis: 1
+                errors: "ignore"
+
+  Evaluation:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          - load_model: false
+            model: LazyRegressor
+            module: lazypredict.Supervised
+            config:
+              verbose: 0
+              ignore_warnings: false
+              random_state: 42
+            split:
+              method: train_test_split
+              config:
+                test_size: 0.2
+                random_state: 42
+            validation: 
+              use_validation_target: true
+          - load_model: true
+            model: "models/final_model.pkl"
+            validation: 
+              methods: ['r2_score', 'mae']
+              use_validation_target: true

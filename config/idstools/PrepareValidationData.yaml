@@ -1,0 +1,23 @@
+default:
+  Validation_Data:
+    _objects:
+      Target:
+        input_path: "data/BikeRentalDaily_test.csv"
+        input_delimiter: ";"
+        index: "instant"
+        label: "cnt"
+
+  Minimal_Preprocessing:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _NaNDropper:
+            - target: ['hum', 'season']
+              config:
+                axis: 0
+                how: "any"
+          _FeatureDropper:
+            - target: ['casual', 'registered', 'dteday', 'temp']
+              config:
+                axis: 1
+                errors: "ignore"

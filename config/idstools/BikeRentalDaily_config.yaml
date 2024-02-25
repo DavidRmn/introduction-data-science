@@ -6,22 +6,11 @@ default:
         input_delimiter: ";"
         index: "instant"
         label: "cnt"
-        features: ['registered', 'temp', 'atemp', 'windspeed', 'season', 'yr', 'mnth', 'weekday', 'weathersit']
-  
-  Validation_Data:
-    _objects:
-      Target:
-        input_path: "data/BikeRentalDaily_test.csv"
-        input_delimiter: ";"
-        index: "instant"
-        label: "cnt"
-        features: ['registered', 'temp', 'atemp', 'windspeed', 'season', 'yr', 'mnth', 'weekday', 'weathersit']
 
 Task1:
   01_Data_Exploration:
     data_explorer:
       DataExplorer:
-        target: Target_Data
         pipeline:
           descriptive_analysis: true
           missing_value_analysis: true
@@ -31,10 +20,9 @@ Task1:
           correlation_analysis: true
           calculate_correlation: true
   
-  02_Transform_dteday_to_datetime:
+  02_Data_Preparation:
     data_preparation:
       DataPreparation:
-        target: Target_Data
         pipeline:
           _CustomTransformer:
             - func: target_to_datetime
@@ -42,10 +30,111 @@ Task1:
               config:
                 target: dteday
                 format: "%d.%m.%Y"
-  
-  03_Time_Series_Analysis:
+          _NaNDropper:
+            - target: hum
+            - target: season
+
+  03_Data_Exploration:
     data_explorer:
       DataExplorer:
-        target: Target_Data
         pipeline:
           time_series_analysis: true
+          variance_inflation_factor: true
+
+Task2:
+  01_Minimal_Preparation:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _FeatureDropper:
+            - target: casual
+              config:
+                axis: 1
+                errors: "ignore"
+            - target: registered
+              config:
+                axis: 1
+                errors: "ignore"
+
+  02_Baseline_Regression_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          train_test_split: true
+          linear_regression: true
+          validate_models: true
+
+  03_Impute_NaN_Values_Mean:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _SimpleImputer:
+            - target: hum
+              config:
+                strategy: mean
+          _CustomTransformer:
+            - func: encode_season
+              module: idstools._transformer
+              config:
+                target: dteday
+
+  04_Baseline_Regression_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          train_test_split: true
+          linear_regression: true
+          validate_models: true
+
+  05_Reset_Data:
+    Target_Data:
+      _objects:
+        Target:
+          input_path: "results/TASK2/01_Minimal_Preparation/BikeRentalDaily_train_processed.csv"
+          input_delimiter: ";"
+          index: "instant"
+          label: "cnt"
+
+  06_Impute_NaN_Values_Median:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _SimpleImputer:
+            - target: hum
+              config:
+                strategy: median
+          _CustomTransformer:
+            - func: encode_season
+              module: idstools._transformer
+              config:
+                target: dteday
+
+  07_Baseline_Regression_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          train_test_split: true
+          linear_regression: true
+          validate_models: true
+
+  08_Windspeed_Imputation:
+    data_preparation:
+      DataPreparation:
+        pipeline:
+          _CustomTransformer:
+            - func: negative_to_nan
+              module: idstools._transformer
+              config:
+                target: windspeed
+          _SimpleImputer:
+            - target: windspeed
+              config:
+                strategy: mean
+
+  09_Baseline_Regression_Model:
+    model_optimization:
+      ModelOptimization:
+        pipeline:
+          train_test_split: true
+          linear_regression: true
+          validate_models: true
