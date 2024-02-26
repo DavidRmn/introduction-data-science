@@ -1,4 +1,4 @@
-# TODO: Review class and fix output_path for target_data
+# TODO: Review class
 import importlib
 import pandas as pd
 from sklearn.pipeline import Pipeline
