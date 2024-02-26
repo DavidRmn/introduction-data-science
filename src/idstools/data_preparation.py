@@ -102,71 +102,61 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
 
 @use_decorator(emergency_logger)
 class DataPreparation():
-    """This class is used to prepare the data for the training of the model."""
-    def __init__(self, target: TargetData, validation_target: TargetData = None, pipeline: dict = None):
+    """This class is used to prepare the data for the training of the model with multiple targets."""
+    def __init__(self, targets: list, pipeline: dict = None):
         try:
-            logger.info("Initializing DataPreparation.")
-            self.result_logger = setup_logging("data_preparation_results", env_name=target.env_name, step_name=target.step_name, filename="DataPreparation")
-
-            # Initialize class variables
-            self._pipeline = None
-            self._processed_data = pd.DataFrame()
-
-            # Load data
-            self.target = target
-            self._data = self.target.update_data()
-            logger.info(f"Data loaded from {self.target.input_path}.")
-            self.output_path = self.target.output_path / self.target.env_name / self.target.step_name
-            self.output_path.mkdir(parents=True, exist_ok=True)
-
-            if not pipeline:
-                self.pipeline = {}
-                logger.info(f"Please provide a pipeline configuration.")
-            else:
-                self.pipeline = pipeline
-                logger.info(f"Pipeline configuration:\n{pprint_dynaconf(pipeline)}")
-
+            logger.info("Initializing DataPreparation for multiple targets.")
+            self.targets = targets
+            self.pipeline = pipeline if pipeline else {}
+            self._pipelines = {}  # Store a pipeline for each target
+            
+            for target in self.targets:
+                self._pipelines[target.env_name] = None
+                target.output_path.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Pipeline configuration for target {target.env_name}:\n{pprint_dynaconf(self.pipeline)}")
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
 
-    def build_pipeline(self, pipeline: dict):
-        try:
-            self._pipeline = Pipeline(steps=[(transformer, None) for transformer in pipeline])
-            for transformer in pipeline:
-                self._pipeline.set_params(**{transformer: eval(transformer)(config=pipeline[transformer])})
-            logger.info(f"Pipeline created.")
-            self.result_logger.info(f"Pipeline created:\n{pprint_dynaconf(pipeline)}")
-        except Exception as e:
-            logger.error(f"Error in build_pipeline: {e}")
+    def build_pipeline(self):
+        """This function is used to build the pipeline for each target."""
+        for target in self.targets:
+            try:
+                pipeline_steps = [(transformer, eval(transformer)(config=self.pipeline[transformer])) for transformer in self.pipeline]
+                self._pipelines[target.env_name] = Pipeline(steps=pipeline_steps)
+                logger.info(f"Pipeline created for target {target.env_name}.")
+            except Exception as e:
+                logger.error(f"Error in build_pipeline for target {target.env_name}: {e}")
 
-    def run_pipeline(self, pipeline: dict):
-        try:      
-            self._processed_data = self._data.copy()
-            for transformer in pipeline:
-                self._processed_data = self._pipeline.named_steps[transformer].transform(self._processed_data)
-                logger.info(f"Pipeline step {transformer} has been processed.")
-            self.target.processed_data = self._processed_data
-            self.result_logger.info(f"Processed data:\n{self.target.processed_data.head().T}")
-        except Exception as e:
-            logger.error(f"Error in run_pipeline: {e}")
+    def run_pipeline(self):
+        """This function is used to run the pipeline for each target."""
+        for target in self.targets:
+            try:
+                target_data = target.update_data()
+                processed_data = self._pipelines[target.env_name].fit_transform(target_data)
+                target.processed_data = processed_data
+                logger.info(f"Pipeline processing completed for target {target.env_name}.")
+                self.write_data(target)
+            except Exception as e:
+                logger.error(f"Error in run_pipeline for target {target.env_name}: {e}")
 
-    def write_data(self):
+    def write_data(self, target):
+        """This function is used to write the processed data to a file."""
         try:
-            path = self.output_path / f"{self.target.filename}_processed.csv"
-            write_data(data=self.target.processed_data, output_path=path)
-            logger.info(f"Processed data written to {path}.")
+            path = target.output_path / f"{target.filename}_processed.csv"
+            write_data(data=target.processed_data, output_path=path)
+            logger.info(f"Processed data written to {path} for target {target.env_name}.")
         except Exception as e:
-            logger.error(f"Error in write_data: {e}")
+            logger.error(f"Error in write_data for target {target.env_name}: {e}")
 
     def run(self):
+        """This function is used to run the data preparation pipeline."""
         try:
-            self._data = self.target.update_data()
-            self.build_pipeline(pipeline=self.pipeline)
-            self.run_pipeline(pipeline=self.pipeline)
-            self.write_data()
+            self.build_pipeline()
+            self.run_pipeline()
         except Exception as e:
             self.cancel(reason=f"Error in run: {e}")
 
     def cancel(self, reason):
-        logger.info(f"Cancel of data_preparation due to {reason}")
+        """This function is used to cancel the data preparation."""
+        logger.info(f"Cancel of data preparation due to {reason}")
         exit(1)

@@ -1,28 +1,4 @@
 default:
-  Validation_Data:
-    _objects:
-      Target:
-        input_path: "data/BikeRentalDaily_test.csv"
-        input_delimiter: ";"
-        index: "instant"
-        label: "cnt"
-
-  Minimal_Preprocessing:
-    data_preparation:
-      DataPreparation:
-        pipeline:
-          _NaNDropper:
-            - target: ['hum', 'season']
-              config:
-                axis: 0
-                how: "any"
-          _FeatureDropper:
-            - target: ['casual', 'registered', 'dteday', 'temp']
-              config:
-                axis: 1
-                errors: "ignore"
-
-Task3:
   Target_Data:
     _objects:
       Target:
@@ -33,28 +9,79 @@ Task3:
 
   Validation_Data:
     _objects:
-      ValidationTarget:
-        input_path: "results/DEFAULT/Minimal_Preprocessing/BikeRentalDaily_test_processed.csv"
+      Target:
+        input_path: "data/BikeRentalDaily_test.csv"
+        input_delimiter: ";"
+        index: "instant"
         label: "cnt"
 
-  Minimal_Preprocessing:
+  Preprocessing:
     data_preparation:
       DataPreparation:
+        targets: ['Target_Data', 'Validation_Data']
         pipeline:
-          _NaNDropper:
-            - target: ['hum', 'season']
+          _CustomTransformer:
+            - func: target_to_datetime
+              module: "idstools._transformer"
               config:
-                axis: 0
-                how: "any"
+                target: dteday
+                format: "%d.%m.%Y"
+            - func: impute_season
+              module: "idstools._transformer"
+              config:
+                target: season
+                date: dteday
+            - func: negative_to_nan
+              module: "idstools._transformer"
+              config:
+                target: windspeed
+            - func: process_weekday
+              module: "idstools._transformer"
+              config:
+                target: weekday
+                date: dteday
+            - func: remove_outliers
+              module: "idstools._transformer"
+              config:
+                target: cnt
+          _OneHotEncoder:
+            - target: mnth
+              config:
+                prefix: mnth
+                dtype: "int"
+                drop_first: true
+            - target: weekday
+              config:
+                prefix: weekday
+                dtype: "int"
+                drop_first: true
+            - target: weathersit
+              config:
+                prefix: weathersit
+                dtype: "int"
+                drop_first: true
+          _SimpleImputer:
+            - target: ['hum', 'windspeed']
+              config:
+                strategy: "mean"
           _FeatureDropper:
-            - target: ['casual', 'registered', 'dteday', 'temp']
+            - target: ['casual', 'registered', 'temp', 'dteday', 'workingday']
               config:
                 axis: 1
                 errors: "ignore"
 
+  Exploration:
+    data_explorer:
+      DataExplorer:
+        target: 'Validation_Data'
+        pipeline:
+          descriptive_analysis: true
+
   Evaluation:
     model_optimization:
       ModelOptimization:
+        target: 'Target_Data'
+        validation_target: 'Validation_Data'
         pipeline:
           - load_model: false
             model: LazyRegressor
@@ -70,8 +97,29 @@ Task3:
                 random_state: 42
             validation: 
               use_validation_target: true
+          - load_model: false
+            model: LinearRegression
+            module: sklearn.linear_model
+            config:
+              fit_intercept: true
+              copy_X: true
+              positive: false
+            split:
+              method: train_test_split
+              config:
+                test_size: 0.2
+                random_state: 42
+            save_model:
+              path: "models/LinearRegression.pkl"
+
+  Evaluation_2:
+    model_optimization:
+      ModelOptimization:
+        target: 'Target_Data'
+        validation_target: 'Validation_Data'
+        pipeline:
           - load_model: true
-            model: "models/final_model.pkl"
-            validation: 
+            model: "models/LinearRegression.pkl"
+            validation:
               methods: ['r2_score', 'mae']
               use_validation_target: true

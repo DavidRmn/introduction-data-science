@@ -1,5 +1,6 @@
-import pickle
+import joblib
 import importlib
+import pandas as pd
 from pathlib import Path
 from sklearn.metrics import mean_absolute_error, r2_score
 from sklearn.model_selection import train_test_split
@@ -19,6 +20,9 @@ class ModelOptimization():
             
             # initialize variables
             self._models = {}
+            self.validation_target = None
+            self.X_validation = None
+            self.y_validation = None
 
             # load data
             self.target = target
@@ -29,8 +33,10 @@ class ModelOptimization():
 
             if validation_target:
                 self.validation_target = validation_target
-                self.y_validation = self.validation_target.data[self.validation_target.label]
-                self.X_validation = self.validation_target.data[self.validation_target.features]
+                validation_data = self.validation_target.update_data()
+                self.y_validation = validation_data[self.validation_target.label]
+                self.X_validation = validation_data[self.validation_target.features]
+                self.X_validation = self.X_validation.reindex(columns=self.target.features, fill_value=0)
             else:
                 self.validation_target = None
                 logger.info(f"No validation data provided.")
@@ -81,13 +87,23 @@ class ModelOptimization():
     def _prepare_validation(self, model: dict):
         """This function is used to prepare the validation for the model."""
         try:
-            if not model['validation']:
+            if not 'save_model' in model.keys():
+                logger.info(f"No save_model configuration provided for model {model['model']}.")
+                self._models[model['model']]['save_model'] = None
+            else:
+                self._models[model['model']]['save_model'] = {'path': Path(model['save_model']['path']).absolute()}
+            if not 'validation' in model.keys():
+                logger.info(f"No validation configuration provided for model {model['model']}.")
+                self._models[model['model']]['validation'] = None
+                return
+            if not 'methods' in model['validation'].keys():
                 logger.info(f"No validation method provided for model {model['model']}.")
+                self._models[model['model']]['validation'] = None
                 return
             logger.info("Preparing validation for the model.")
             self._models[model['model']]['validation'] = model['validation']
             if model['validation']['use_validation_target'] and self.validation_target is not None:
-                self._models[model['model']]['X_test'] = self.X_validation
+                self._models[model['model']]['X_test'] = pd.DataFrame(self.X_validation, columns=self._models[model['model']]['features'])
                 self._models[model['model']]['y_test'] = self.y_validation
             else:
                 logger.info(f"No validation data provided for model {model['model']}. Using target data.")
@@ -114,7 +130,10 @@ class ModelOptimization():
                 if model['load_model']:
                     logger.info(f"Loading model {model['model']}.")
                     model_path = Path(model['model']).absolute()
-                    self._models[model['model']] = {'model': pickle.load(open(model_path, 'rb'))}
+                    filename = model_path.name.removesuffix(".pkl") + "_features.pkl"
+                    feature_path = Path(model_path.parent / filename).absolute()
+                    self._models[model['model']] = {'model': joblib.load(open(model_path, 'rb'))}
+                    self._models[model['model']]['features'] = joblib.load(open(feature_path, 'rb'))
                 else:
                     logger.info(f"Preparing model {model['model']}.")
                     self._retrieve_model(model=model)
@@ -128,11 +147,11 @@ class ModelOptimization():
         """This function is used to predict the models."""
         try:
             logger.info("Predicting models.")
-            for model in self._models:
+            for model, config in self._models.items():
                 if model == 'LazyRegressor':
                     logger.info(f"Not predicting model {model}.")
-                    continue
-                self._models[model]['predictions'] = self._models[model]['model'].predict(self._models[model]['X_test'])
+                else:
+                    self._models[model]['predictions'] = self._models[model]['model'].predict(config['X_test'])
         except Exception as e:
             self.cancel(reason=f"Error in predict_models: {e}")
 
@@ -158,18 +177,34 @@ class ModelOptimization():
         """This function is used to validate the models."""
         try:
             logger.info("Validating models.")
-            for model in self._models:
+            for model, config in self._models.items():
                 if model == 'LazyRegressor':
                     logger.info(f"Not validating model {model}.")
                     continue
-                if not model['validation']:
+                if config['validation'] is None:
                     logger.info(f"No validation method provided for model {model}.")
                     return
-                for method in model['validation']['methods']:
+                for method in config['validation']['methods']:
                         method_instance = getattr(self, method)
                         method_instance(model=model)
         except Exception as e:
                 self.cancel(reason=f"Error in validate_models: {e}")
+
+    def save_models(self):
+        """This function is used to save the models."""
+        try:
+            logger.info("Saving models.")
+            for model, config in self._models.items():
+                if config['save_model'] is not None and 'path' in config['save_model'].keys():
+                    logger.info(f"Saving model {model}.")
+                    model_path = config['save_model']['path']
+                    feature_path = model_path.parent / f"{model_path.name.removesuffix('.pkl')}_features.pkl"
+                    joblib.dump(self._models[model]['model'], open(model_path, 'wb'))
+                    joblib.dump(self.target.features, open(feature_path, 'wb'))
+                else:
+                    logger.error(f"Please provide a path to save the model {model}.")
+        except Exception as e:
+            self.cancel(reason=f"Error in save_models: {e}")
 
     def run(self):
         """This function is used to run the model optimization pipeline."""
@@ -178,6 +213,7 @@ class ModelOptimization():
             self.prepare_models()
             self.predict_models()
             self.validate_models()
+            self.save_models()
         except Exception as e:
             self.cancel(reason=f"Error in run: {e}")
 
