@@ -1,3 +1,7 @@
+# TODO: Add docstrings to all functions
+# TODO: Add type hints to all functions
+# TODO: Change execution of pipeline to one model at a time
+# TODO: Better cofnig handling e.g. save_model not in _perpare_models()
 import joblib
 import importlib
 import pandas as pd

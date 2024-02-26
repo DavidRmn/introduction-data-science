@@ -88,13 +88,6 @@ class Target(TargetData):
             self.features.remove(self.label)
         else:
             logger.info(f"Using features: {self.features}")
-
-        if not output_path:
-            self.output_path = resolve_path("results")
-            logger.info(f"Output path not provided.\nUsing default output path: {self.output_path}")
-        else:
-            self.output_path = resolve_path(output_path)
-            logger.info(f"Using output path: {self.output_path}")
         
         if not env_name:
             logger.info(f"No environment name provided.\nUsing default environment name: SELF_EXECUTED")
@@ -107,6 +100,13 @@ class Target(TargetData):
             self.step_name = "STEP"
         else:
             logger.info(f"Using step name: {self.step_name}")
+
+        if not output_path:
+            self.output_path = resolve_path("results")
+            logger.info(f"Output path not provided.\nUsing default output path: {self.output_path}")
+        else:
+            self.output_path = resolve_path(output_path)
+            logger.info(f"Using output path: {self.output_path}")
     
     def update_data(self) -> pd.DataFrame:
         """

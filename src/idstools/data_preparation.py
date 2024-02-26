@@ -1,3 +1,4 @@
+# TODO: Review class and fix output_path for target_data
 import importlib
 import pandas as pd
 from sklearn.pipeline import Pipeline
@@ -112,7 +113,8 @@ class DataPreparation():
             
             for target in self.targets:
                 self._pipelines[target.env_name] = None
-                target.output_path.mkdir(parents=True, exist_ok=True)
+                self.output_path = target.output_path / target.env_name / target.step_name
+                self.output_path.mkdir(parents=True, exist_ok=True)
                 logger.info(f"Pipeline configuration for target {target.env_name}:\n{pprint_dynaconf(self.pipeline)}")
         except Exception as e:
             self.cancel(reason=f"Error in __init__: {e}")
@@ -142,7 +144,7 @@ class DataPreparation():
     def write_data(self, target):
         """This function is used to write the processed data to a file."""
         try:
-            path = target.output_path / f"{target.filename}_processed.csv"
+            path = self.output_path / f"{target.filename}_processed.csv"
             write_data(data=target.processed_data, output_path=path)
             logger.info(f"Processed data written to {path} for target {target.env_name}.")
         except Exception as e:
