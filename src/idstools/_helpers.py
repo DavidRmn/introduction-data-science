@@ -155,3 +155,13 @@ def write_data(data: pd.DataFrame, output_path: Path):
         output_path,
         index=False
         )
+    
+@emergency_logger
+def add_category(target: dict, category: str) -> dict:
+    """
+    This function adds a category to a target dictionary.
+    """
+    try:
+        return target.setdefault(category, {})
+    except AttributeError as e:
+        logger.error(f"Error in add_result_category: {e}")

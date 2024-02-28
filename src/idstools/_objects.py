@@ -32,9 +32,11 @@ class Target(TargetData):
         data (pd.DataFrame): The target data.
         filename (str): The filename of the input data.
         processed_data (pd.DataFrame): The processed data.
-        analysis_results (dict): The analysis results.  
+        analysis_results (dict): The analysis results.
+        figures (dict): The figures.  
     """
     def __init__(self,
+                 name: str,
                  input_path: str,
                  input_delimiter: str = None,
                  label: str = None,
@@ -46,6 +48,7 @@ class Target(TargetData):
                 ):
         logger.info("Initializing TargetData object.")
         super().__init__(
+            name=name,
             data=pd.DataFrame(),
             index=index,
             label=label,
@@ -72,6 +75,12 @@ class Target(TargetData):
                 index=index
                 )
             self.filename = self.input_path.stem
+
+        if not name:
+            logger.error("Please provide a name.")
+            return
+        else:
+            logger.info(f"Using name: {self.name}")
 
         if not label:
             logger.info(f"No label provided.")

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 from idstools._data_models import TargetData
-from idstools._helpers import use_decorator, emergency_logger, setup_logging
+from idstools._helpers import use_decorator, emergency_logger, setup_logging, add_category
 
 pd.set_option('display.precision', 2)
 logger = setup_logging(__name__)
@@ -19,7 +19,7 @@ class DataExplorer():
     """
     This class is used to explore the data.
     """
-    def __init__(self, targets: list, pipeline: dict = None):
+    def __init__(self, targets: dict, pipeline: list[dict] = None):
         try:
             logger.info("Initializing DataExplorer")
             self.targets = targets
@@ -346,7 +346,7 @@ class DataExplorer():
         """
         try:
             target_data = target.update_data()
-            results = self._add_result_category(target.analysis_results['DataExplorer'], "descriptive_analysis")
+            results = add_category(target.analysis_results['DataExplorer'], "descriptive_analysis")
 
             head = kwargs.get('head', 5)
             tail = kwargs.get('tail', 5)
@@ -374,7 +374,7 @@ class DataExplorer():
         """
         try:
             target_data = target.update_data()
-            results = self._add_result_category(target.analysis_results['DataExplorer'], "correlation_analysis")
+            results = add_category(target.analysis_results['DataExplorer'], "correlation_analysis")
 
             method = kwargs.get('method', 'pearson')
             min_periods= kwargs.get('min_periods', 1)
@@ -406,7 +406,7 @@ class DataExplorer():
         """
         try:
             target_data = target.update_data()
-            results = self._add_result_category(target.analysis_results['DataExplorer'], "vif_analysis")
+            results = add_category(target.analysis_results['DataExplorer'], "vif_analysis")
 
             vif_data = add_constant(target_data.select_dtypes(include=['float64', 'int64']))
             vif_data.drop(target.label, axis=1, inplace=True)
@@ -434,15 +434,6 @@ class DataExplorer():
             results["variance_inflation_factor"] = vif
         except Exception as e:
             logger.error(f"Error in variance_inflation_factor method: {e}")
-
-    def _add_result_category(self, target: dict, category: str = "DataExplorer") -> dict:
-        """
-        Prepares the analysis results for the target.
-        """
-        try:
-            return target.setdefault(category, {})
-        except Exception as e:
-            logger.error(f"Error in _prepare_analysis_results: {e}")
 
     def _run_pipeline(self, target: TargetData):
         """
@@ -489,12 +480,12 @@ class DataExplorer():
         try:
             if not self.pipeline:
                 logger.warning("No pipeline provided. Running descriptive_analysis only.")
-                self.pipeline = {"descriptive_analysis": None}
-            for target in self.targets:
-                self._add_result_category(target.analysis_results)
+                self.pipeline = [{"explorer": "descriptive_analysis"}]
+            for name, target in self.targets.items():
+                add_category(target.analysis_results, "DataExplorer")
                 self._run_pipeline(target)
                 self._log_results(target)
-                logger.info(f"Data exploration completed for target {target.filename} in {target.env_name}:{target.step_name}.")
+                logger.info(f"Data exploration completed for target {name} in {target.env_name}:{target.step_name}.")
         except (Exception, KeyboardInterrupt) as e:
             self.cancel(reason=f"Run canceled: {e}")
 

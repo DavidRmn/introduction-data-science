@@ -2,6 +2,7 @@ default:
   Target_Data:
     _objects:
       Target:
+        name: Target_Data
         input_path: "data/BikeRentalDaily_train.csv"
         input_delimiter: ";"
         index: "instant"
@@ -10,39 +11,11 @@ default:
   Validation_Data:
     _objects:
       Target:
+        name: Validation_Data
         input_path: "data/BikeRentalDaily_test.csv"
         input_delimiter: ";"
         index: "instant"
         label: "cnt"
-
-  Exploration_01:
-    data_explorer:
-      DataExplorer:
-        targets: ['Validation_Data', 'Target_Data']
-        pipeline:
-          - explorer: descriptive_analysis
-            config:
-              head: 10
-              tail: 10
-          - explorer: correlation_analysis
-            config:
-              method: "pearson"
-          - explorer: correlation_analysis
-            config:
-              method: "kendall"
-          - explorer: correlation_analysis
-            config:
-              method: "spearman"
-          - explorer: vif_analysis
-          - explorer: missing_values_plot
-          - explorer: correlation_plot
-          - explorer: outlier_plot
-          - explorer: distribution_plot
-          - explorer: scatter_plot
-          - explorer: categorical_plot
-          - explorer: time_series_plot
-          - explorer: over_index_plot
-
 
   Preprocessing:
     data_preparation:
@@ -73,6 +46,10 @@ default:
               module: "idstools._transformer"
               config:
                 target: cnt
+            - func: standard_scaler
+              module: "idstools._transformer"
+              config:
+                label: cnt
           _OneHotEncoder:
             - target: mnth
               config:
@@ -99,77 +76,42 @@ default:
                 axis: 1
                 errors: "ignore"
 
-  Exploration:
-    data_explorer:
-      DataExplorer:
-        targets: ['Validation_Data']
-        pipeline:
-          - explorer: descriptive_analysis
-            config:
-              head: 10
-              tail: 10
-          - explorer: correlation_analysis
-            config:
-              method: "pearson"
-          - explorer: correlation_analysis
-            config:
-              method: "kendall"
-          - explorer: correlation_analysis
-            config:
-              method: "spearman"
-          - explorer: vif_analysis
-          - explorer: missing_values_plot
-          - explorer: correlation_plot
-          - explorer: outlier_plot
-          - explorer: distribution_plot
-          - explorer: scatter_plot
-          - explorer: categorical_plot
-          - explorer: time_series_plot
-          - explorer: over_index_plot
-
   Evaluation:
     model_optimization:
       ModelOptimization:
-        target: 'Target_Data'
-        validation_target: 'Validation_Data'
+        targets: ['Target_Data', 'Validation_Data']
         pipeline:
-          - load_model: false
-            model: LazyRegressor
+          - model: LazyRegressor
             module: lazypredict.Supervised
             config:
               verbose: 0
               ignore_warnings: false
               random_state: 42
             split:
-              method: train_test_split
+              targets: ['Target_Data']
               config:
                 test_size: 0.2
                 random_state: 42
-            validation: 
-              use_validation_target: true
-          - load_model: false
-            model: LinearRegression
+            validation:
+              targets: ['Target_Data', 'Validation_Data']
+          - model: GridSearchCV
+            module: sklearn.model_selection
+
+          - model: LinearRegression
             module: sklearn.linear_model
             config:
               fit_intercept: true
               copy_X: true
               positive: false
             split:
-              method: train_test_split
+              targets: ['Target_Data']
               config:
                 test_size: 0.2
                 random_state: 42
-            save_model:
+            save:
               path: "models/LinearRegression.pkl"
 
-  Evaluation_2:
-    model_optimization:
-      ModelOptimization:
-        target: 'Target_Data'
-        validation_target: 'Validation_Data'
-        pipeline:
-          - load_model: true
-            model: "models/LinearRegression.pkl"
+          - model: "models/LinearRegression.pkl"
             validation:
+              targets: ['Validation_Data']
               methods: ['r2_score', 'mae']
-              use_validation_target: true

@@ -41,7 +41,6 @@ class Wrapper:
     def __init__(self, config: PrettyDynaconf):
         self.config = config
         self.targets = {}
-        self.current_validation_target = None
         self.environments = self._prepare_environments()
 
     def _prepare_classes(self, env_name, step_config) -> dict:
@@ -105,20 +104,13 @@ class Wrapper:
         """
         try:
             instance_config = class_config.copy()
-            if 'targets' in class_config.keys():
-                instance_config["targets"] = []
+            instance_config['targets'] = {}
 
             for target in targets:
                 targets[target].env_name = env_name
                 targets[target].step_name = step_name
-                if 'target' in class_config.keys() and class_config["target"] is not None and class_config["target"] == target:
-                    instance_config["target"] = targets[target]
-                    continue
-                elif 'validation_target' in class_config.keys() and class_config["validation_target"] is not None and class_config["validation_target"] == target:
-                    instance_config["validation_target"] = targets[target]
-                    continue
-                elif 'targets' in class_config.keys() and class_config["targets"] is not None and target in class_config["targets"]:
-                    instance_config["targets"].append(targets[target])
+                if targets[target].name in class_config["targets"]:
+                    instance_config["targets"][targets[target].name] = targets[target]
             instance = cls(**instance_config)
             logger.debug(f"Running class {cls.__name__} with configuration {class_config} in environment {env_name} and step {step_name}")
             instance.run()

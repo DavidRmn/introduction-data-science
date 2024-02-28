@@ -7,6 +7,8 @@ class TargetData:
     Data class to store the target data
     
     Args:
+    name: str = None
+        The name of the target data
     data: pd.DataFrame
         The target data
     index: str  = None
@@ -34,6 +36,7 @@ class TargetData:
     figures: dict = None
         The figures
     """
+    name: str
     data: pd.DataFrame
     index: str = None
     label: str = None
