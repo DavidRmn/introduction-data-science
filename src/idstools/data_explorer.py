@@ -210,7 +210,7 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in distribution_analysis: {e}")
 
-    def scatter_plot(self, target: TargetData, **kwargs):
+    def scatter_plot(self, target: TargetData, **kwargs) -> None:
         """
         Generates scatter plots for the dataset.
 
@@ -241,7 +241,7 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in scatter_analysis: {e}")
 
-    def categorical_plot(self, target: TargetData, **kwargs):
+    def categorical_plot(self, target: TargetData, **kwargs) -> None:
         """
         Generates count plots for categorical columns of the dataset.
 
@@ -272,7 +272,7 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in categorical_analysis: {e}")
 
-    def time_series_plot(self, target: TargetData, **kwargs):
+    def time_series_plot(self, target: TargetData, **kwargs) -> None:
         """
         Generates time series plots for each column of the dataset.
 
@@ -304,7 +304,7 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in time_series_analysis: {e}")
 
-    def over_index_plot(self, target: TargetData, **kwargs):
+    def over_index_plot(self, target: TargetData, **kwargs) -> None:
         """
         Generates plots for over-index analysis.
 
@@ -464,7 +464,7 @@ class DataExplorer():
             except Exception as e:
                 logger.error(f"Error executing explorer '{explorer}': {e}")
 
-    def _log_results(self, target: TargetData):
+    def _log_results(self, target: TargetData) -> None:
         """
         Logs the results of the data exploration.
         """
@@ -482,7 +482,7 @@ class DataExplorer():
         except Exception as e:
             logger.error(f"Error in _log_results: {e}")
 
-    def run(self):
+    def run(self) -> None:
         """
         Runs the pipeline of data exploration methods.
         """
@@ -499,7 +499,7 @@ class DataExplorer():
         except (Exception, KeyboardInterrupt) as e:
             self.cancel(reason=f"Run canceled: {e}")
 
-    def cancel(self, reason: str):
+    def cancel(self, reason: str) -> None:
         """
         Cancels the data exploration process.
         """
