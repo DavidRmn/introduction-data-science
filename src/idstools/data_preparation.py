@@ -106,7 +106,7 @@ class DataPreparation():
         try:
             logger.info("Initializing DataPreparation for multiple targets.")
             self.targets = targets
-            self.pipeline = pipeline if pipeline else {}
+            self.pipeline = pipeline if pipeline else {} 
             self._pipeline = None
             
         except Exception as e:
@@ -145,12 +145,14 @@ class DataPreparation():
     def run(self):
         """This function is used to run the data preparation pipeline."""
         try:
+            if not self.pipeline:
+                self.cancel(reason="No pipeline defined.")
             self.build_pipeline()
             self.run_pipeline()
-        except Exception as e:
-            self.cancel(reason=f"Error in run: {e}")
+        except (Exception, KeyboardInterrupt) as e:
+            self.cancel(reason=f"Run canceled: {e}")
 
     def cancel(self, reason):
         """This function is used to cancel the data preparation."""
-        logger.info(f"Cancel of data preparation due to {reason}")
+        logger.info(f"Cancel of data preparation due to <{reason}>.")
         exit(1)

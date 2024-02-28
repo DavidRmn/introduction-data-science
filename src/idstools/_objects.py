@@ -57,7 +57,8 @@ class Target(TargetData):
             step_name=step_name,
             features=features,
             processed_data=pd.DataFrame(),
-            analysis_results=dict()
+            analysis_results=dict(),
+            figures=dict()
         )
 
         if not input_path:

@@ -19,21 +19,21 @@ def setup_logging(module_name, env_name: str = "default", step_name: str = "defa
     logfile_path.parent.mkdir(parents=True, exist_ok=True)
 
     if module_name == 'data_explorer_results': 
-        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}_results.log"
+        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}.log"
         _logging.default.handlers.data_explorer_handler.filename = str(resultfile_path)
         resultfile_path.parent.mkdir(parents=True, exist_ok=True)
     elif _logging.default.handlers.data_explorer_handler.filename == "default.log":
         _logging.default.handlers.data_explorer_handler.filename = str(logfile_path)
 
     if module_name == 'data_preparation_results':
-        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}_results.log"
+        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}.log"
         _logging.default.handlers.data_preparation_handler.filename = str(resultfile_path)
         resultfile_path.parent.mkdir(parents=True, exist_ok=True)
     elif _logging.default.handlers.data_preparation_handler.filename == "default.log":
         _logging.default.handlers.data_preparation_handler.filename = str(logfile_path)
 
     if module_name == 'model_optimization_results':
-        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}_results.log"
+        resultfile_path = Path(__file__).resolve().parent.parent.parent / 'results' / env_name / step_name / f"{filename}.log"
         _logging.default.handlers.model_optimization_handler.filename = str(resultfile_path)
         resultfile_path.parent.mkdir(parents=True, exist_ok=True)
     elif _logging.default.handlers.model_optimization_handler.filename == "default.log":

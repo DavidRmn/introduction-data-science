@@ -31,6 +31,8 @@ class TargetData:
         The processed data
     analysis_results: dict = None
         The analysis results
+    figures: dict = None
+        The figures
     """
     data: pd.DataFrame
     index: str = None
@@ -44,3 +46,4 @@ class TargetData:
     step_name: str = None
     processed_data: pd.DataFrame = field(default_factory=pd.DataFrame)
     analysis_results: dict = None
+    figures: dict = None
