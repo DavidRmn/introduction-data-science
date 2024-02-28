@@ -491,7 +491,6 @@ class DataExplorer():
                 logger.warning("No pipeline provided. Running descriptive_analysis only.")
                 self.pipeline = {"descriptive_analysis": None}
             for target in self.targets:
-                self.current_target = target
                 self._add_result_category(target.analysis_results)
                 self._run_pipeline(target)
                 self._log_results(target)
