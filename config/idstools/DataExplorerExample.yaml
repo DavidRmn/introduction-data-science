@@ -1,0 +1,28 @@
+default:
+  Exploration:
+    data_explorer:
+      DataExplorer:
+        targets: ['Validation_Data']
+        pipeline:
+          - explorer: descriptive_analysis
+            config:
+              head: 10
+              tail: 10
+          - explorer: correlation_analysis
+            config:
+              method: "pearson"
+          - explorer: correlation_analysis
+            config:
+              method: "kendall"
+          - explorer: correlation_analysis
+            config:
+              method: "spearman"
+          - explorer: vif_analysis
+          - explorer: missing_values_plot
+          - explorer: correlation_plot
+          - explorer: outlier_plot
+          - explorer: distribution_plot
+          - explorer: scatter_plot
+          - explorer: categorical_plot
+          - explorer: time_series_plot
+          - explorer: over_index_plot

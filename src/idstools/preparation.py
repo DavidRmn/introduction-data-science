@@ -2,6 +2,7 @@ import importlib
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
 from sklearn.base import BaseEstimator, TransformerMixin
 from idstools._config import pprint_dynaconf
 from idstools._helpers import use_decorator, emergency_logger, setup_logging, write_data
@@ -19,12 +20,35 @@ class _NaNDropper(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         for element in self.config:
+            config = element.get("config", {})
             if element["target"] == []:
-                X = X.dropna(**element["config"])
+                X = X.dropna(**config)
                 return X
             for feature in element["target"]:
-                X = X.dropna(subset=[feature], **element["config"])
+                X = X.dropna(subset=[feature], **config)
             return X
+        
+@use_decorator(emergency_logger)
+class _StandardScaler(BaseEstimator, TransformerMixin):
+    """This class is used to scale features."""
+    def __init__(self, config: list):
+        self.config = config
+
+    def fit(self, X, y=None):
+        return self
+    
+    def transform(self, X):
+        for element in self.config:
+            config = element.get("config", {})
+            scaler = StandardScaler(**config)
+            if element["target"] == []:
+                logger.info("Scaling all features.")
+                X = scaler.fit_transform(X)
+                return X
+            for feature in element["target"]:
+                logger.info(f"Scaling feature {feature}.")
+                X[feature] = scaler.fit_transform(X[[feature]])
+        return X
 @use_decorator(emergency_logger)
 class _SimpleImputer(BaseEstimator, TransformerMixin):
     """This class is used to impute NaN values."""
@@ -36,7 +60,8 @@ class _SimpleImputer(BaseEstimator, TransformerMixin):
     
     def transform(self, X):
         for element in self.config:
-            imputer = SimpleImputer(**element["config"])
+            config = element.get("config", {})
+            imputer = SimpleImputer(**config)
             for feature in element["target"]:
                 X[feature] = imputer.fit_transform(X[[feature]])
         return X
@@ -52,7 +77,8 @@ class _OneHotEncoder(BaseEstimator, TransformerMixin):
     
     def transform(self, X):
         for element in self.config:
-            ohe_data = pd.get_dummies(X[element["target"]], **element["config"])
+            config = element.get("config", {})
+            ohe_data = pd.get_dummies(X[element["target"]], **config)
             X = pd.concat([X, ohe_data], axis=1)
             X = X.drop([element["target"]], axis=1)
         return X
@@ -68,8 +94,9 @@ class _FeatureDropper(BaseEstimator, TransformerMixin):
     
     def transform(self, X):
         for element in self.config:
+            config = element.get("config", {})
             for feature in element["target"]:
-                X = X.drop([feature], **element["config"])
+                X = X.drop([feature], **config)
         return X
 
 @use_decorator(emergency_logger)
@@ -95,8 +122,9 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         for element in self.config:
+            config = element.get("config", {})
             func = self._retrieve_function(element["func"], element.get("module"))
-            X = func(X, **element.get("config", {}))
+            X = func(X, **config)
         return X
 
 @use_decorator(emergency_logger)
