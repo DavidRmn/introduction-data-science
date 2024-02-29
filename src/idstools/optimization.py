@@ -1,11 +1,8 @@
-#TODO: Implement log results function
-#TODO: Implement GridSearch class
 import joblib
 from pathlib import Path
 from importlib import import_module
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
-from idstools._data_models import TargetData
 from idstools._helpers import emergency_logger, setup_logging, add_category
 
 logger = setup_logging(__name__)
@@ -56,6 +53,17 @@ class ModelOptimization():
         except Exception as e:
             raise ImportError(f"Could not import function: {func_name} from module: {module}. Error: {e}")
 
+    def _add_estimator_config(self, config: dict, estimator: str):
+        """This function is used to add the estimator config."""
+        if not config:
+            config = {}
+        logger.info(f"Adding estimator config for {estimator}.")
+        model = self.models[estimator]['model']
+        param_grid = self.models[estimator]['param_grid']
+        config.setdefault('estimator', model)
+        config.setdefault('param_grid', param_grid)
+        return config
+
     def _retrieve_model(self, model_config: dict[dict]):
         """This function is used to retrieve the model."""
         try:
@@ -63,9 +71,29 @@ class ModelOptimization():
             model = model_config.get("model")
             module = model_config.get("module", None)
             load = model_config.get("load", None)
+            param_grid = model_config.get("param_grid", None)
+            estimators = model_config.get("estimators", None)
             config = model_config.get("config", {})
             if load:
                 self._load_model(model_config)
+                return
+            elif param_grid:
+                logger.info(f"Retrieving model {model} with param grid {param_grid}.")
+                model_target = add_category(self.models, id)
+                model = self._retrieve_function(model, module)
+                model_target['model'] = model()
+                model_target['config'] = config
+                model_target['param_grid'] = param_grid
+                return
+            elif estimators:
+                for estimator in estimators:
+                    logger.info(f"Retrieving model {estimator}.")
+                    model_target = add_category(self.models,id)
+                    model_target = add_category(model_target, estimator)
+                    model = self._retrieve_function(model, module)
+                    config = self._add_estimator_config(config, estimator)
+                    model_target['model'] = model(**config)
+                    model_target['config'] = config
                 return
             elif model:
                 logger.info(f"Retrieving model {model}.")
@@ -73,8 +101,10 @@ class ModelOptimization():
                 model = self._retrieve_function(model, module)
                 model_target['model'] = model(**config)
                 model_target['config'] = config
+                return
             else:
-                logger.info(f"No model provided for {model}.")
+                logger.info(f"No model provided for {id}.")
+                return
 
         except Exception as e:
             self.cancel(reason=f"Error in _retrieve_model: {e}")
@@ -112,6 +142,7 @@ class ModelOptimization():
         try:
             id = model_config.get("id", None)
             model = model_config.get("model")
+            estimators = model_config.get("estimators", None)
             for target in model_config.get("targets", {}):
                 target = self.targets[target] if target in self.targets.keys() else None
                 if target is None:
@@ -127,6 +158,12 @@ class ModelOptimization():
                         X_test=target['X_test'],
                         y_test=target['y_test']
                         )
+                elif estimators:
+                    for estimator in estimators:
+                        self.models[id][estimator]['model'].fit(
+                            X=target['X_train'],
+                            y=target['y_train']
+                            )
                 else:
                     self.models[id]['model'].fit(
                         X=target['X_train'],
@@ -164,6 +201,7 @@ class ModelOptimization():
         """This function is used to predict the model."""
         try:
             id = model_config.get("id", None)
+            estimators = model_config.get("estimators", None)
             validation = model_config.get("validation", {})
             for target in validation.get("targets", {}):
                 target = self.targets[target] if target in self.targets.keys() else None
@@ -171,12 +209,23 @@ class ModelOptimization():
                     logger.info(f"No validation target provided for model {id}.")
                     return
                 logger.info(f"Predicting {target.name} for {id}.")
-                model = self.models[id]["model"]
-                model_target = self.models[id]["validation"][target.name]
-                if hasattr(model, "predict"):
-                    model_target["y_pred"] = model.predict(model_target["X_test"])
+                if estimators:
+                    for estimator in estimators:
+                        model = self.models[id][estimator]["model"]
+                        model_result = add_category(self.models[id][estimator], target.name)
+                        model_target = self.models[id]["validation"][target.name]
+                        if hasattr(model, "predict"):
+                            model_result["y_pred"] = model.predict(model_target["X_test"])
+                            print(f"estimator: {estimator} result:{model_result['y_pred']}")
+                        else:
+                            logger.info(f"No predict method found for model {id}.")
                 else:
-                    logger.info(f"No predict method found for model {id}.")
+                    model = self.models[id]["model"]
+                    model_target = self.models[id]["validation"][target.name]
+                    if hasattr(model, "predict"):
+                        model_target["y_pred"] = model.predict(model_target["X_test"])
+                    else:
+                        logger.info(f"No predict method found for model {id}.")
         except Exception as e:
             self.cancel(reason=f"Error in _predict_model: {e}")
 
@@ -269,28 +318,4 @@ class ModelOptimization():
 
     def cancel(self, reason):
         logger.info(f"Cancel of model_optimization due to {reason}")
-        exit(1)
-
-@emergency_logger
-class GridSearch():
-    def __init__(self, targets: dict, pipeline: list[dict] = None):
-        try:
-            logger.info("Initializing GridSearch")
-            
-            self.models = {}
-            self.targets = targets
-            self.pipeline = pipeline if pipeline else {}
-
-        except Exception as e:
-            self.cancel(reason=f"Error in __init__: {e}")
-
-    def run(self):
-        """This function is used to run the Grid Search pipeline."""
-        try:
-            pass
-        except Exception as e:
-            self.cancel(reason=f"Error in run: {e}")
-
-    def cancel(self, reason):
-        logger.info(f"Cancel of GridSearch due to {reason}")
         exit(1)

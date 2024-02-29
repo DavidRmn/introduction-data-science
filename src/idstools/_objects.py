@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.pipeline import Pipeline
 from idstools._data_models import TargetData
 from idstools._helpers import setup_logging
 from idstools._helpers import use_decorator, emergency_logger, resolve_path, read_data
@@ -61,7 +62,8 @@ class Target(TargetData):
             features=features,
             processed_data=pd.DataFrame(),
             analysis_results=dict(),
-            figures=dict()
+            figures=dict(),
+            pipeline=None
         )
 
         if not input_path:

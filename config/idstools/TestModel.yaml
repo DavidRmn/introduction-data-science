@@ -79,6 +79,17 @@ default:
       ModelOptimization:
         targets: [Target_Data, Validation_Data]
         pipeline:
+          - id: RandomForestRegressor
+            model: RandomForestRegressor
+            module: sklearn.ensemble
+            param_grid:
+              n_estimators: [100, 200, 300]
+              max_depth: [10, 20, 30]
+              min_samples_split: [2, 5, 10]
+              min_samples_leaf: [1, 2, 4]
+              bootstrap: [True, False]
+              random_state: [42]
+
           - id: LazyRegressor
             targets: [Target_Data]
             model: LazyRegressor
@@ -118,32 +129,18 @@ default:
               targets: [Validation_Data]
               methods: [r2_score, mae]
 
-  GSOptimization:
-    optimization:
-      GridSearch:
-        targets: [Target_Data]
-        pipeline:
-          - id: RandomForestRegressor
-            model: RandomForestRegressor
-            module: sklearn.ensemble
-            params_grid:
-              n_estimators: [100, 200, 300]
-              max_depth: [10, 20, 30]
-              min_samples_split: [2, 5, 10]
-              min_samples_leaf: [1, 2, 4]
-              bootstrap: [True, False]
-              random_state: [42]
-          
           - id: GridSearchCV
+            targets: [Target_Data]
             model: GridSearchCV
             module: sklearn.model_selection
             estimators: [RandomForestRegressor]
             config:
               cv: 5
               n_jobs: -1
-              verbose: 2
-              scoring: 'neg_mean_absolute_error'
+              scoring: 'r2'
             split:
               config:
                 test_size: 0.2
                 random_state: 42
+            validation:
+              targets: [Target_Data]

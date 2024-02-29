@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.pipeline import Pipeline
 from dataclasses import dataclass, field
 
 @dataclass
@@ -50,3 +51,4 @@ class TargetData:
     processed_data: pd.DataFrame = field(default_factory=pd.DataFrame)
     analysis_results: dict = None
     figures: dict = None
+    pipeline: Pipeline = field(default_factory=Pipeline)
