@@ -460,7 +460,7 @@ class DataExplorer():
         Logs the results of the data exploration.
         """
         try:
-            result_logger = setup_logging("data_explorer_results", env_name=target.env_name, step_name=target.step_name, filename=f"DataExplorer_{target.filename}")
+            result_logger = setup_logging("exploration_results", env_name=target.env_name, step_name=target.step_name, filename=f"DataExplorer_{target.filename}")
             result_logger.info(f"Logging results for target {target.filename} in {target.env_name}:{target.step_name}.")
 
             for result_category, results in target.analysis_results['DataExplorer'].items():

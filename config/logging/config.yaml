@@ -13,17 +13,17 @@ default:
       filename: idstools.log
       level: DEBUG
       formatter: simple
-    data_explorer_handler:
+    exploration_handler:
       class: logging.FileHandler
       filename: default.log
       level: DEBUG
       formatter: simple
-    data_preparation_handler:
+    preparation_handler:
       class: logging.FileHandler
       filename: default.log
       level: DEBUG
       formatter: simple
-    model_optimization_handler:
+    optimization_handler:
       class: logging.FileHandler
       filename: default.log
       level: DEBUG
@@ -57,17 +57,17 @@ default:
       level: INFO
       handlers: [file_handler, console_handler]
       propagate: False
-    data_explorer_results:
+    exploration_results:
       level: INFO
-      handlers: [data_explorer_handler]
+      handlers: [exploration_handler]
       propagate: False
-    data_preparation_results:
+    preparation_results:
       level: INFO
-      handlers: [data_preparation_handler]
+      handlers: [preparation_handler]
       propagate: False
-    model_optimization_results:
+    optimization_results:
       level: INFO
-      handlers: [model_optimization_handler]
+      handlers: [optimization_handler]
       propagate: False
     root:
       level: INFO
