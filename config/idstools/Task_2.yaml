@@ -1,0 +1,71 @@
+default:
+
+preprocessing:
+  pipeline:
+    _CustomTransformer:
+      - func: target_to_datetime
+        module: "idstools._transformer"
+        config:
+          target: dteday
+          format: "%d.%m.%Y"
+      - func: impute_season
+        module: "idstools._transformer"
+        config:
+          target: season
+          date: dteday
+      - func: negative_to_nan
+        module: "idstools._transformer"
+        config:
+          target: windspeed
+      - func: process_weekday
+        module: "idstools._transformer"
+        config:
+          target: weekday
+          date: dteday
+      - func: remove_outliers
+        module: "idstools._transformer"
+        config:
+          target: casual
+    _OneHotEncoder:
+      - target: season
+        config:
+          prefix: season
+          dtype: "int"
+          drop_first: true
+      - target: weekday
+        config:
+          prefix: weekday
+          dtype: "int"
+          drop_first: true
+      - target: weathersit
+        config:
+          prefix: weathersit
+          dtype: "int"
+          drop_first: true
+    _NaNDropper:
+      - target: ['windspeed']
+    _SimpleImputer:
+      - target: ['hum']
+        config:
+          strategy: "mean"
+    _FeatureDropper:
+      - target: ['casual', 'registered', 'temp', 'dteday']
+        config:
+          axis: 1
+          errors: "ignore"
+
+optimization:
+  pipeline:
+    - id: 1
+      targets: [1]
+      model: LinearRegression
+      module: sklearn.linear_model
+      split:
+        config:
+          test_size: 0.2
+          random_state: 42
+      validation:
+        targets: [2]
+        methods:
+          - mae
+          - r2_score
