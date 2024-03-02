@@ -37,7 +37,7 @@ class Target(TargetData):
         figures (dict): The figures.  
     """
     def __init__(self,
-                 name: str,
+                 id: int,
                  input_path: str,
                  input_delimiter: str = None,
                  label: str = None,
@@ -49,7 +49,7 @@ class Target(TargetData):
                 ):
         logger.info("Initializing TargetData object.")
         super().__init__(
-            name=name,
+            id=id,
             data=pd.DataFrame(),
             index=index,
             label=label,
@@ -78,11 +78,11 @@ class Target(TargetData):
                 )
             self.filename = self.input_path.stem
 
-        if not name:
+        if not id:
             logger.error("Please provide a name.")
             return
         else:
-            logger.info(f"Using name: {self.name}")
+            logger.info(f"Using id: {self.id}")
 
         if not label:
             logger.info(f"No label provided.")

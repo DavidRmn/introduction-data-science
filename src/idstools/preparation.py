@@ -130,7 +130,7 @@ class _CustomTransformer(BaseEstimator, TransformerMixin):
 @use_decorator(emergency_logger)
 class DataPreparation():
     """This class is used to prepare the data for the training of the model with multiple targets."""
-    def __init__(self, targets: dict, pipeline: dict = None):
+    def __init__(self, targets: list, pipeline: dict = None):
         try:
             logger.info("Initializing DataPreparation for multiple targets.")
             self.targets = targets
@@ -151,24 +151,24 @@ class DataPreparation():
 
     def run_pipeline(self):
         """This function is used to run the pipeline for each target."""
-        for name, target in self.targets.items():
+        for target in self.targets:
             try:
                 target_data = target.update_data()
                 processed_data = self._pipeline.fit_transform(target_data)
                 target.processed_data = processed_data
-                logger.info(f"Pipeline processing completed for target {name} in {target.env_name}:{target.step_name}.")
+                logger.info(f"Pipeline processing completed for target {target.filename} in {target.env_name}:{target.step_name}.")
                 self.write_data(target)
             except Exception as e:
-                logger.error(f"Error in run_pipeline for target {name} in {target.env_name}:{target.step_name}: {e}")
+                logger.error(f"Error in run_pipeline for target {target.filename} in {target.env_name}:{target.step_name}: {e}")
 
     def write_data(self, target):
         """This function is used to write the processed data to a file."""
         try:
             path = target.output_path / target.env_name / target.step_name / f"{target.filename}_processed.csv"
             write_data(data=target.processed_data, output_path=path)
-            logger.info(f"Processed data written to {path} for target {target.name} in {target.env_name}:{target.step_name}.")
+            logger.info(f"Processed data written to {path} for target {target.id} in {target.env_name}:{target.step_name}.")
         except Exception as e:
-            logger.error(f"Error in write_data for target {target.name} in {target.env_name}:{target.step_name}: {e}")
+            logger.error(f"Error in write_data for target {target.id} in {target.env_name}:{target.step_name}: {e}")
 
     def run(self):
         """This function is used to run the data preparation pipeline."""

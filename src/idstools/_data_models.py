@@ -37,7 +37,7 @@ class TargetData:
     figures: dict = None
         The figures
     """
-    name: str
+    id: int
     data: pd.DataFrame
     index: str = None
     label: str = None

@@ -10,7 +10,7 @@ logger = setup_logging(__name__)
 @emergency_logger
 class ModelOptimization():
     """This class is used to optimize the model."""
-    def __init__(self, targets: dict, pipeline: list[dict] = None):
+    def __init__(self, targets: list, pipeline: list[dict] = None):
         try:
             logger.info("Initializing ModelOptimization")
             
@@ -116,12 +116,12 @@ class ModelOptimization():
             model = model_config.get("model")
             split = model_config.get("split", None)
             for target in model_config.get("targets", []):
-                target = self.targets[target] if target in self.targets.keys() else None
+                target = next((t for t in self.targets if target == t.id), None)
                 if target is None:
                     logger.info(f"No target provided for model {model}.")
                     return
                 logger.info(f"Preparing target for {model}.")
-                model_target = add_category(self.models[id], target.name)
+                model_target = add_category(self.models[id], target.filename)
 
                 target_data = target.update_data()
 
@@ -133,7 +133,7 @@ class ModelOptimization():
                 model_target["X_test"] = X_test
                 model_target["y_train"] = y_train
                 model_target["y_test"] = y_test
-                logger.info(f"Performed splitting for {target.name}\nTraining set: {len(X_train)} samples\nTesting set: {len(X_test)} samples")
+                logger.info(f"Performed splitting for {target.filename}\nTraining set: {len(X_train)} samples\nTesting set: {len(X_test)} samples")
         except Exception as e:
             self.cancel(reason=f"Error in _prepare_data: {e}")
 
@@ -144,35 +144,36 @@ class ModelOptimization():
             model = model_config.get("model")
             estimators = model_config.get("estimators", None)
             for target in model_config.get("targets", {}):
-                target_object = self.targets[target] if target in self.targets.keys() else None
+                target = next((t for t in self.targets if target == t.id), None)
                 if target is None:
                     logger.info(f"No target provided for model {model}.")
                     return
 
-                logger.info(f"Fitting {target_object.name} for {model}.")
-                results = add_category(target_object.analysis_results, id)
-                target = self.models[id][target_object.name]
+                logger.info(f"Fitting {target.filename} for {model}.")
+                results = add_category(target.analysis_results, id)
+                target_data = self.models[id][target.filename]
                 if model == 'LazyRegressor':
                     models, pred = self.models[id]['model'].fit(
-                        X_train=target['X_train'],
-                        y_train=target['y_train'],
-                        X_test=target['X_test'],
-                        y_test=target['y_test']
+                        X_train=target_data['X_train'],
+                        y_train=target_data['y_train'],
+                        X_test=target_data['X_test'],
+                        y_test=target_data['y_test']
                         )
                     results[model] = models
+                    results['y_pred'] = pred
                 elif estimators:
                     for estimator in estimators:
                         result = self.models[id][estimator]['model'].fit(
-                            X=target['X_train'],
-                            y=target['y_train']
+                            X=target_data['X_train'],
+                            y=target_data['y_train']
                             )
                         results[f'{estimator}_best_estimator'] = result.best_estimator_
                         results[f'{estimator}_best_params'] = result.best_params_
                         results[f'{estimator}_best_score'] = result.best_score_
                 else:
                     self.models[id]['model'].fit(
-                        X=target['X_train'],
-                        y=target['y_train']
+                        X=target_data['X_train'],
+                        y=target_data['y_train']
                         )
 
         except Exception as e:
@@ -184,16 +185,16 @@ class ModelOptimization():
             id = model_config.get("id", None)
             validation = model_config.get("validation", {})
             for target in validation.get("targets", {}):
-                target = self.targets[target] if target in self.targets.keys() else None
+                target = next((t for t in self.targets if target == t.id), None)
                 if target is None:
                     logger.info(f"No validation target provided for model {id}.")
                     return
-                logger.info(f"Prepare validation data {target.name} for {id}.")
+                logger.info(f"Prepare validation data {target.filename} for {id}.")
 
                 model = self.models[id]
 
                 model_validation = add_category(self.models[id], "validation")
-                model_validation = add_category(model_validation, target.name)
+                model_validation = add_category(model_validation, target.filename)
 
                 target_data = target.update_data()
 
@@ -209,23 +210,23 @@ class ModelOptimization():
             estimators = model_config.get("estimators", None)
             validation = model_config.get("validation", {})
             for target in validation.get("targets", {}):
-                target = self.targets[target] if target in self.targets.keys() else None
+                target = next((t for t in self.targets if target == t.id), None)
                 if not target:
                     logger.info(f"No validation target provided for model {id}.")
                     return
-                logger.info(f"Predicting {target.name} for {id}.")
+                logger.info(f"Predicting target {target.filename} for {id}.")
                 if estimators:
                     for estimator in estimators:
                         model = self.models[id][estimator]["model"]
-                        model_result = add_category(self.models[id][estimator], target.name)
-                        model_target = self.models[id]["validation"][target.name]
+                        model_result = add_category(self.models[id][estimator], target.filename)
+                        model_target = self.models[id]["validation"][target.filename]
                         if hasattr(model, "predict"):
                             model_result["y_pred"] = model.predict(model_target["X_test"])
                         else:
                             logger.info(f"No predict method found for model {id}.")
                 else:
                     model = self.models[id]["model"]
-                    model_target = self.models[id]["validation"][target.name]
+                    model_target = self.models[id]["validation"][target.filename]
                     if hasattr(model, "predict"):
                         model_target["y_pred"] = model.predict(model_target["X_test"])
                     else:
@@ -239,15 +240,15 @@ class ModelOptimization():
             id = model_config.get("id")
             logger.info(f"Calculating R2 score for model {id}.")
             for target in model_config.get("validation", {}).get("targets", []):
-                target_object = self.targets[target] if target in self.targets.keys() else None
-                results = add_category(target_object.analysis_results, id)
+                target = next((t for t in self.targets if target == t.id), None)
+                results = add_category(target.analysis_results, id)
                 if not target:
                     logger.info(f"No validation target provided for model {id}.")
                     return
-                model_target = self.models[id]["validation"][target_object.name]
-                self.models[id]["validation"][target_object.name]["r2_score"] = r2_score(model_target["y_test"], model_target["y_pred"])
-                results["r2_score"] = self.models[id]["validation"][target_object.name]["r2_score"]
-                logger.info(f"R2 score for model {id} with validation target {target_object.name} is {self.models[id]['validation'][target_object.name]['r2_score']}.")
+                model_target = self.models[id]["validation"][target.filename]
+                self.models[id]["validation"][target.filename]["r2_score"] = r2_score(model_target["y_test"], model_target["y_pred"])
+                results["r2_score"] = self.models[id]["validation"][target.filename]["r2_score"]
+                logger.info(f"R2 score for model {id} with validation target {target.filename} is {self.models[id]['validation'][target.filename]['r2_score']}.")
         except Exception as e:
             self.cancel(reason=f"Error in r2_score: {e}")
 
@@ -257,15 +258,15 @@ class ModelOptimization():
             id = model_config.get("id")
             logger.info(f"Calculating mean absolute error for model {id}.")
             for target in model_config.get("validation", {}).get("targets", []):
-                target_object = self.targets[target] if target in self.targets.keys() else None
-                results = add_category(target_object.analysis_results, id)
+                target = next((t for t in self.targets if target == t.id), None)
+                results = add_category(target.analysis_results, id)
                 if not target:
                     logger.info(f"No validation target provided for model {id}.")
                     return
-                model_target = self.models[id]["validation"][target_object.name]
-                self.models[id]["validation"][target_object.name]["mae"] = mean_absolute_error(model_target["y_test"], model_target["y_pred"])
-                results["mae"] = self.models[id]["validation"][target_object.name]["mae"]
-                logger.info(f"Mean absolute error for model {id} with validation target {target_object.name} is {self.models[id]['validation'][target_object.name]['mae']}.")
+                model_target = self.models[id]["validation"][target.filename]
+                self.models[id]["validation"][target.filename]["mae"] = mean_absolute_error(model_target["y_test"], model_target["y_pred"])
+                results["mae"] = self.models[id]["validation"][target.filename]["mae"]
+                logger.info(f"Mean absolute error for model {id} with validation target {target.filename} is {self.models[id]['validation'][target.filename]['mae']}.")
         except Exception as e:
             self.cancel(reason=f"Error in mae: {e}")
 
@@ -290,19 +291,21 @@ class ModelOptimization():
             features = save.get("features", None)
             for target in model_object.get("targets", []):
                 model_object = self.models[id]
-                target = self.targets[target] if target in self.targets.keys() else None
+                target = next((t for t in self.targets if target == t.id), None)
                 if not target:
                     logger.info(f"No target provided for model {id}.")
                     return
                 if model:
                     logger.info(f"Saving model to {model}.")
                     model_path = Path(model).absolute()
+                    model_path.parent.mkdir(parents=True, exist_ok=True)
                     with open(model_path, 'wb') as f:
                         joblib.dump(model_object['model'], f)
                 if features:
                     logger.info(f"Saving features to {features}.")
                     feature_path = Path(features).absolute()
-                    features = model_object['features'] if model_object.get("features", None) else self.targets[target.name].features
+                    feature_path.parent.mkdir(parents=True, exist_ok=True)
+                    features = model_object['features'] if model_object.get("features", None) else target.features
                     with open(feature_path, 'wb') as f:
                         joblib.dump(features, f)
         except Exception as e:
@@ -315,7 +318,7 @@ class ModelOptimization():
         try:
             id = model_config.get("id")
             for target in model_config.get("targets", []):
-                target = self.targets[target] if target in self.targets.keys() else None
+                target = next((t for t in self.targets if target == t.id), None)
                 if not target:
                     logger.info(f"No target provided for model {model_config.get('id')}.")
                     return
@@ -323,15 +326,14 @@ class ModelOptimization():
                 result_logger.info(f"Logging results for target {target.filename} in {target.env_name}:{target.step_name}.")
                 result_logger.info(f"Results for model {id}:")
 
-                for result_category, results in target.analysis_results.items():
+                for result_category, results in target.analysis_results[id].items():
                     result_logger.info(f"Results for {result_category}:")
-                    for result, value in results.items():
-                        if type(value) == dict:
-                            result_logger.info(f"{result}:\n")
-                            for sub_result, sub_value in value.items():
-                                result_logger.info(f"  {sub_result}: {sub_value}")
-                        else:
-                            result_logger.info(f"{result}:\n{value}")
+                    if type(results) == dict:
+                        result_logger.info(f"{results}:\n")
+                        for sub_result, sub_value in results.items():
+                            result_logger.info(f"  {sub_result}: {sub_value}")
+                    else:
+                        result_logger.info(f"{result_category}:\n{results}")
         except Exception as e:
             logger.error(f"Error in _log_results: {e}")
     def run(self):
@@ -346,7 +348,7 @@ class ModelOptimization():
                 self._predict_model(model_config)
                 self._validate_model(model_config)
                 self._save_model(model_config)
-            self._log_results(model_config)
+                self._log_results(model_config)
         except Exception as e:
             self.cancel(reason=f"Error in run: {e}")
 

@@ -104,13 +104,12 @@ class Wrapper:
         """
         try:
             instance_config = class_config.copy()
-            instance_config['targets'] = {}
+            instance_config['targets'] = []
 
             for target in targets:
                 targets[target].env_name = env_name
                 targets[target].step_name = step_name
-                if targets[target].name in class_config["targets"]:
-                    instance_config["targets"][targets[target].name] = targets[target]
+                instance_config['targets'].append(targets[target])
             instance = cls(**instance_config)
             logger.debug(f"Running class {cls.__name__} with configuration {class_config} in environment {env_name} and step {step_name}")
             instance.run()

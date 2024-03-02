@@ -19,7 +19,7 @@ class DataExplorer():
     """
     This class is used to explore the data.
     """
-    def __init__(self, targets: dict, pipeline: list[dict] = None):
+    def __init__(self, targets: list, pipeline: list[dict] = None):
         try:
             logger.info("Initializing DataExplorer")
             self.targets = targets
@@ -481,11 +481,11 @@ class DataExplorer():
             if not self.pipeline:
                 logger.warning("No pipeline provided. Running descriptive_analysis only.")
                 self.pipeline = [{"explorer": "descriptive_analysis"}]
-            for name, target in self.targets.items():
+            for target in self.targets:
                 add_category(target.analysis_results, "DataExplorer")
                 self._run_pipeline(target)
                 self._log_results(target)
-                logger.info(f"Data exploration completed for target {name} in {target.env_name}:{target.step_name}.")
+                logger.info(f"Data exploration completed for target {target.id} in {target.env_name}:{target.step_name}.")
         except (Exception, KeyboardInterrupt) as e:
             self.cancel(reason=f"Run canceled: {e}")
 

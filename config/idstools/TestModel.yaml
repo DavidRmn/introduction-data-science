@@ -2,7 +2,7 @@ default:
   Target_Data:
     _objects:
       Target:
-        name: Target_Data
+        id: 1
         input_path: "data/BikeRentalDaily_train.csv"
         input_delimiter: ";"
         index: "instant"
@@ -11,7 +11,7 @@ default:
   Validation_Data:
     _objects:
       Target:
-        name: Validation_Data
+        id: 2
         input_path: "data/BikeRentalDaily_test.csv"
         input_delimiter: ";"
         index: "instant"
@@ -20,10 +20,10 @@ default:
   Preprocessing:
     preparation:
       DataPreparation:
-        targets: [Target_Data, Validation_Data]
+        targets: [1, 2]
         pipeline:
           _StandardScaler:
-            - target: ['temp', 'atemp', 'hum', 'windspeed']
+            - target: ['leaflets', 'hum']
           _CustomTransformer:
             - func: target_to_datetime
               module: "idstools._transformer"
@@ -77,7 +77,7 @@ default:
   Evaluation:
     optimization:
       ModelOptimization:
-        targets: [Target_Data, Validation_Data]
+        targets: [1, 2]
         pipeline:
           - id: RandomForestRegressor
             model: RandomForestRegressor
@@ -119,11 +119,12 @@ default:
               positive: [true, false]
 
           - id: LazyRegressor
-            targets: [Target_Data]
+            targets: [1]
             model: LazyRegressor
             module: lazypredict.Supervised
             config:
               verbose: 0
+              predictions: true
               ignore_warnings: false
               random_state: 42
             split:
@@ -131,10 +132,10 @@ default:
                 test_size: 0.2
                 random_state: 42
             validation:
-              targets: [Validation_Data]
+              targets: [2]
 
           - id: LinearRegression
-            targets: [Target_Data]
+            targets: [1]
             model: LinearRegression
             module: sklearn.linear_model
             config:
@@ -154,11 +155,11 @@ default:
               model: "models/LinearRegression.pkl"
               features: "models/LinearRegression_features.pkl"
             validation:
-              targets: [Validation_Data]
+              targets: [2]
               methods: [r2_score, mae]
 
           - id: GridSearchCV
-            targets: [Target_Data]
+            targets: [1]
             model: GridSearchCV
             module: sklearn.model_selection
             estimators: [RandomForestRegressor, XGBRegressor, ExtraTreesRegressor]
@@ -171,4 +172,4 @@ default:
                 test_size: 0.2
                 random_state: 42
             validation:
-              targets: [Validation_Data]
+              targets: [2]
