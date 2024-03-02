@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.pipeline import Pipeline
+from typing import Union
 from idstools._data_models import TargetData
 from idstools._helpers import setup_logging
 from idstools._helpers import use_decorator, emergency_logger, resolve_path, read_data
@@ -37,7 +37,7 @@ class Target(TargetData):
         figures (dict): The figures.  
     """
     def __init__(self,
-                 id: int,
+                 id: Union[int, str],
                  input_path: str,
                  input_delimiter: str = None,
                  label: str = None,

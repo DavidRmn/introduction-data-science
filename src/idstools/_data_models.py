@@ -1,4 +1,5 @@
 import pandas as pd
+from typing import Union
 from sklearn.pipeline import Pipeline
 from dataclasses import dataclass, field
 
@@ -37,7 +38,7 @@ class TargetData:
     figures: dict = None
         The figures
     """
-    id: int
+    id: Union[int, str]
     data: pd.DataFrame
     index: str = None
     label: str = None

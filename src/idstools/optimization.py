@@ -145,6 +145,7 @@ class ModelOptimization():
         try:
             id = model_config.get("id", None)
             model = model_config.get("model")
+            validation = model_config.get("validation", {})
             estimators = model_config.get("estimators", None)
             for target in model_config.get("targets", {}):
                 target = next((t for t in self.targets if target == t.id), None)
@@ -155,15 +156,28 @@ class ModelOptimization():
                 logger.info(f"Fitting {target.filename} for {model}.")
                 results = add_category(target.analysis_results, id)
                 target_data = self.models[id][target.filename]
+                validation_result = add_category(self.models[id], "validation")
+                validation_result = add_category(validation_result, target.filename)
                 if model == 'LazyRegressor':
-                    models, pred = self.models[id]['model'].fit(
-                        X_train=target_data['X_train'],
-                        y_train=target_data['y_train'],
-                        X_test=target_data['X_test'],
-                        y_test=target_data['y_test']
-                        )
-                    results[model] = models
-                    results['y_pred'] = pred
+                    for validation_file in validation.get("targets", {}):
+                        validation_file = next((t for t in self.targets if validation_file == t.id), None)
+                        if not validation_file:
+                            logger.info(f"No validation target provided for model {id}.")
+                            return
+                        validation_file.update_data()
+                        models, predictions = self.models[id]['model'].fit(
+                            X_train=target_data['X_train'],
+                            y_train=target_data['y_train'],
+                            X_test=self.models[id]['validation'][validation_file.filename]['X_test'],
+                            y_test=self.models[id]['validation'][validation_file.filename]['y_test']
+                            )
+                        results["LazyRegressor"] = [models]
+                        for model in predictions:
+                            results[f"LazyRegressor_{model}"] = predictions[model]
+                            validation_file.figures[f"LazyRegressor_{model}_actual_vs_predicted"] = self.actual_vs_predicted(
+                                self.models[id]['validation'][validation_file.filename]['y_test'],
+                                predictions[model], model=f"LazyRegressor_{model}"
+                                )
                 elif estimators:
                     for estimator in estimators:
                         result = self.models[id][estimator]['model'].fit(
@@ -225,8 +239,14 @@ class ModelOptimization():
                         model_target = self.models[id]["validation"][target.filename]
                         if hasattr(model, "predict"):
                             model_result["y_pred"] = model.predict(model_target["X_test"])
-                            # add method for actual vs predicted here 
-                            # for model in estimators call actual vs predicted
+                            for model in estimators:
+                                results = add_category(target.analysis_results, id)
+                                results[f"{estimator}_{model}"] = model_result["y_pred"]
+                                target.figures[f"GS_{estimator}_actual_vs_predicted"] = self.actual_vs_predicted(
+                                    model_target["y_test"],
+                                    model_result["y_pred"],
+                                    model=f"GS_{estimator}"
+                                    )
                         else:
                             logger.info(f"No predict method found for model {id}.")
                 else:
@@ -234,21 +254,13 @@ class ModelOptimization():
                     model_target = self.models[id]["validation"][target.filename]
                     if hasattr(model, "predict"):
                         model_target["y_pred"] = model.predict(model_target["X_test"])
-                        # add method for actual vs predicted here
                         results = add_category(target.analysis_results, id)
                         results["y_pred"] = model_target["y_pred"]
-                        data = {"Actual": model_target["y_test"], "Predicted": model_target["y_pred"]}
-                        df = pd.DataFrame(data)
-                        sns.set_theme(style="whitegrid")
-                        plot = plt.figure(figsize=(10, 6))
-
-                        sns.lineplot(data=df, markers=False)
-
-                        plt.title("Actual vs. Predicted Values")
-                        plt.xlabel("Data Points")
-                        plt.ylabel("Values")
-                        figures = add_category(target.figures, id)
-                        figures['Actual_vs_Predicted'] = plot
+                        target.figures[f"{id}_actual_vs_predicted"] = self.actual_vs_predicted(
+                            model_target["y_test"],
+                            model_target["y_pred"],
+                            model=id
+                            )
                     else:
                         logger.info(f"No predict method found for model {id}.")
         except Exception as e:
@@ -269,6 +281,8 @@ class ModelOptimization():
                 self.models[id]["validation"][target.filename]["r2_score"] = r2_score(model_target["y_test"], model_target["y_pred"])
                 results["r2_score"] = self.models[id]["validation"][target.filename]["r2_score"]
                 logger.info(f"R2 score for model {id} with validation target {target.filename} is {self.models[id]['validation'][target.filename]['r2_score']}.")
+                # workarround
+                print(f"R2 score for model {id} with validation target {target.filename} is {self.models[id]['validation'][target.filename]['r2_score']}.")
         except Exception as e:
             self.cancel(reason=f"Error in r2_score: {e}")
 
@@ -287,8 +301,23 @@ class ModelOptimization():
                 self.models[id]["validation"][target.filename]["mae"] = mean_absolute_error(model_target["y_test"], model_target["y_pred"])
                 results["mae"] = self.models[id]["validation"][target.filename]["mae"]
                 logger.info(f"Mean absolute error for model {id} with validation target {target.filename} is {self.models[id]['validation'][target.filename]['mae']}.")
+                # workarround 
+                print(f"Mean absolute error for model {id} with validation target {target.filename} is {self.models[id]['validation'][target.filename]['mae']}.")
         except Exception as e:
             self.cancel(reason=f"Error in mae: {e}")
+
+    def actual_vs_predicted(self, y_test, y_pred, model: str = ""):
+        data = {"Actual": y_test, "Predicted": y_pred}
+        df = pd.DataFrame(data)
+        sns.set_theme(style="whitegrid")
+        plot = plt.figure(figsize=(10, 6))
+
+        sns.lineplot(data=df, markers=False)
+
+        plt.title(f"{model} Actual vs. Predicted Values")
+        plt.xlabel("Data Points")
+        plt.ylabel("Values")
+        return plot
 
     def _validate_model(self, model_config: dict[dict]):
         """This function is used to validate the model."""
@@ -363,8 +392,8 @@ class ModelOptimization():
             for model_config in self.pipeline:
                 self._retrieve_model(model_config)
                 self._prepare_data(model_config)
-                self._fit_model(model_config)
                 self._prepare_validation(model_config)
+                self._fit_model(model_config)
                 self._predict_model(model_config)
                 self._validate_model(model_config)
                 self._save_model(model_config)
