@@ -1,5 +1,8 @@
 import joblib
 from pathlib import Path
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 from importlib import import_module
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_error, r2_score
@@ -222,6 +225,8 @@ class ModelOptimization():
                         model_target = self.models[id]["validation"][target.filename]
                         if hasattr(model, "predict"):
                             model_result["y_pred"] = model.predict(model_target["X_test"])
+                            # add method for actual vs predicted here 
+                            # for model in estimators call actual vs predicted
                         else:
                             logger.info(f"No predict method found for model {id}.")
                 else:
@@ -229,6 +234,21 @@ class ModelOptimization():
                     model_target = self.models[id]["validation"][target.filename]
                     if hasattr(model, "predict"):
                         model_target["y_pred"] = model.predict(model_target["X_test"])
+                        # add method for actual vs predicted here
+                        results = add_category(target.analysis_results, id)
+                        results["y_pred"] = model_target["y_pred"]
+                        data = {"Actual": model_target["y_test"], "Predicted": model_target["y_pred"]}
+                        df = pd.DataFrame(data)
+                        sns.set_theme(style="whitegrid")
+                        plot = plt.figure(figsize=(10, 6))
+
+                        sns.lineplot(data=df, markers=False)
+
+                        plt.title("Actual vs. Predicted Values")
+                        plt.xlabel("Data Points")
+                        plt.ylabel("Values")
+                        figures = add_category(target.figures, id)
+                        figures['Actual_vs_Predicted'] = plot
                     else:
                         logger.info(f"No predict method found for model {id}.")
         except Exception as e:
