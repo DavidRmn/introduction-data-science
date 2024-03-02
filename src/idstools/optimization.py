@@ -317,6 +317,7 @@ class ModelOptimization():
         plt.title(f"{model} Actual vs. Predicted Values")
         plt.xlabel("Data Points")
         plt.ylabel("Values")
+        plt.close()
         return plot
 
     def _validate_model(self, model_config: dict[dict]):
