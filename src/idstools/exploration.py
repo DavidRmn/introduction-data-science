@@ -1,4 +1,3 @@
-# TODO: Only log the results of the steps that were executed.
 import io
 import math
 import warnings
@@ -464,7 +463,9 @@ class DataExplorer():
             result_logger = setup_logging("exploration_results", env_name=target.env_name, step_name=target.step_name, filename=f"DataExplorer_{target.filename}")
             result_logger.info(f"Logging results for target {target.filename} in {target.env_name}:{target.step_name}.")
 
-            for result_category, results in target.analysis_results['DataExplorer'].items():
+            for explorer in self.pipeline:
+                result_category = explorer.get("explorer")
+                results = target.analysis_results['DataExplorer'].get(result_category, {})
                 result_logger.info(f"Results for {result_category}:")
 
                 log_results = {key: (value.to_string(float_format='{:.3f}'.format) if hasattr(value, 'to_string') else str(value)) for key, value in results.items()}
