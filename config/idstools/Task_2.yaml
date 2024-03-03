@@ -49,7 +49,7 @@ preprocessing:
         config:
           strategy: "mean"
     _FeatureDropper:
-      - target: ['casual', 'registered', 'temp', 'dteday']
+      - target: ['casual', 'registered', 'temp', 'hum', 'dteday']
         config:
           axis: 1
           errors: "ignore"
