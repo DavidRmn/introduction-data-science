@@ -5,6 +5,25 @@ from idstools._helpers import setup_logging
 
 logger = setup_logging(__name__)
 
+def ensure_numeric(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure all columns are numeric.
+    
+    Args:
+        df (pd.DataFrame): DataFrame
+
+    Returns:
+        pd.DataFrame: DataFrame with all columns converted to numeric
+    """
+    logger.info("Ensuring all columns are numeric.")
+    for col in df.columns:
+        if df[col].dtype == 'object':
+            try:
+                df[col] = pd.to_numeric(df[col])
+            except Exception as e:
+                logger.error(f"Error converting column '{col}' to numeric: {e}")
+    return df
+
 def remove_outliers(df: pd.DataFrame, target: str, threshold: float = 3) -> pd.DataFrame:
     """
     Drop outliers from target column.
@@ -38,7 +57,7 @@ def negative_to_nan(df: pd.DataFrame, target: str) -> pd.DataFrame:
     """
     logger.info(f"Replacing negative values with NaN in target column '{target}'.")
     if target in df.columns:
-        df[target] = df[target].apply(lambda x: x if x > 0 else np.nan)
+        df[target] = df[target].apply(lambda x: x if x > 0.0 else np.nan)
     else:
         logger.error(f"Column '{target}' not found in DataFrame.")
     return df
