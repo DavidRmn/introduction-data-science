@@ -1,8 +1,16 @@
 default:
+  Target_Data:
+    _objects:
+      Target:
+        id: 1
+        input_path: "/home/davidrmn/Studies/introduction-data-science/data/ohe_processed_data.csv"
+        input_delimiter: ","
+        label: remainder__workingday
+
   Exploration:
-    data_explorer:
+    exploration:
       DataExplorer:
-        targets: ['Validation_Data']
+        targets: [1]
         pipeline:
           - explorer: descriptive_analysis
             config:
