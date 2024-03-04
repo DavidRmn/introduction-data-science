@@ -38,16 +38,19 @@ class _StandardScaler(BaseEstimator, TransformerMixin):
         return self
     
     def transform(self, X):
+        original_index = X.index  # Store the original index
         for element in self.config:
             config = element.get("config", {})
             scaler = StandardScaler(**config)
             if element["target"] == []:
                 logger.info("Scaling all features.")
-                X = scaler.fit_transform(X)
-                return X
-            for feature in element["target"]:
-                logger.info(f"Scaling feature {feature}.")
-                X[feature] = scaler.fit_transform(X[[feature]])
+                X_transformed = scaler.fit_transform(X)
+                X = pd.DataFrame(X_transformed, columns=X.columns, index=original_index)  # Set index explicitly
+            else:
+                for feature in element["target"]:
+                    logger.info(f"Scaling feature {feature}.")
+                    # Scale each feature as specified in the config
+                    X[feature] = scaler.fit_transform(X[[feature]])
         return X
 @use_decorator(emergency_logger)
 class _SimpleImputer(BaseEstimator, TransformerMixin):
