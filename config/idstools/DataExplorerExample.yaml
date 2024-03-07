@@ -1,17 +1,51 @@
 default:
-  Target_Data:
+
+  Target_Data5:
+    _objects:
+      Target:
+        id: 5
+        input_path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+        input_delimiter: ";"
+        label: cnt
+
+  Target_Data0:
+    _objects:
+      Target:
+        id: 0
+        input_path: "/home/davidrmn/Studies/introduction-data-science/data/BikeRentalDaily_train.csv"
+        input_delimiter: ";"
+        label: cnt
+
+  Target_Data1:
     _objects:
       Target:
         id: 1
-        input_path: "/home/davidrmn/Studies/introduction-data-science/data/ohe_processed_data.csv"
+        input_path: "/home/davidrmn/Studies/introduction-data-science/data/train_data_task2.csv"
         input_delimiter: ","
-        label: remainder__workingday
+        label: cnt
+
+  Target_Data2:
+    _objects:
+      Target:
+        id: 2
+        input_path: "/home/davidrmn/Studies/introduction-data-science/data/validation_data_task2.csv"
+        input_delimiter: ","
+        label: cnt
+
+  Target_Data3:
+    _objects:
+      Target:
+        id: 3
+        input_path: "/home/davidrmn/Studies/introduction-data-science/data/test_data_task2.csv"
+        input_delimiter: ","
+        label: cnt
 
   Exploration:
     exploration:
       DataExplorer:
-        targets: [1]
+        targets: [5, 0, 1, 2, 3]
         pipeline:
+          - explorer: distribution_plot
           - explorer: descriptive_analysis
             config:
               head: 10
@@ -29,7 +63,6 @@ default:
           - explorer: missing_values_plot
           - explorer: correlation_plot
           - explorer: outlier_plot
-          - explorer: distribution_plot
           - explorer: scatter_plot
           - explorer: categorical_plot
           - explorer: time_series_plot
