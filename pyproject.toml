@@ -41,7 +41,8 @@ dependencies = [
   "dynaconf",
   "tqdm",
   "python-box",
-  "ipython"
+  "ipython",
+  "auto-sklearn"
 ]
 
 [project.urls]
